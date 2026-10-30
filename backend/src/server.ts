@@ -16,7 +16,7 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.json({
     status: "ok",
-    message: "ServiceHub API is running",
+    message: "ServiceHub API is running successfully.",
   });
 });
 
