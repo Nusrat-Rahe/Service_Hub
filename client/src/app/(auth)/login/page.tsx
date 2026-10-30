@@ -63,7 +63,7 @@ export default function LoginPage() {
                 onClick={() => setMessage("Password reset will be available when login is connected.")}
                 type="button"
               >
-                Forgot password?
+                Forgot Password?
               </button>
             </div>
             <div className="auth-password-input">
@@ -92,7 +92,7 @@ export default function LoginPage() {
 
             <button className="button auth-submit" type="submit">
               Sign in
-              <span aria-hidden="true">→</span>
+            
             </button>
 
             <p className="auth-message" role="status" aria-live="polite">

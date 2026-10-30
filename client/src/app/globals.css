@@ -656,6 +656,27 @@ textarea {
   cursor: pointer;
 }
 
+.auth-terms {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 6px;
+  color: #53645b !important;
+  cursor: pointer;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 1.5;
+}
+
+.auth-terms input {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  margin: 1px 0 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
 .auth-submit {
   width: 100%;
   min-height: 48px;
