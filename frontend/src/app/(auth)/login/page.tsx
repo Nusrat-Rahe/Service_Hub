@@ -46,7 +46,7 @@ export default function LoginPage() {
           </div>
 
           <form className="auth-form" onSubmit={handleSubmit}>
-            <label htmlFor="email">Email address</label>
+            <label htmlFor="email">Email Address</label>
             <input
               autoComplete="email"
               id="email"
