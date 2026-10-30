@@ -26,14 +26,6 @@ export default function SiteFooter() {
             </nav>
           </div>
 
-          <div className="footer-column">
-            <h2>For users</h2>
-            <nav className="footer-links" aria-label="User links">
-              <Link href="/user/bookings">My bookings</Link>
-              <Link href="/login">User log in</Link>
-              <Link href="/register">Create a user account</Link>
-            </nav>
-          </div>
         </div>
 
         <div className="footer-bottom">

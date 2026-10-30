@@ -178,6 +178,235 @@
   line-height: 1.65;
 }
 
+.auth-modal {
+  position: fixed;
+  box-sizing: border-box;
+  width: min(520px, calc(100% - 32px));
+  max-width: none;
+  max-height: min(760px, calc(100% - 32px));
+  margin: auto;
+  overflow: auto;
+  padding: clamp(24px, 4vw, 32px);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: #ffffff;
+  color: var(--color-ink);
+  box-shadow: 0 24px 80px rgb(24 51 42 / 24%);
+}
+
+.auth-modal::backdrop {
+  background: rgb(14 30 23 / 58%);
+  backdrop-filter: blur(3px);
+}
+
+.auth-modal-heading {
+  padding-right: 22px;
+}
+
+.auth-modal-heading .eyebrow {
+  margin: 0 0 8px;
+}
+
+.auth-modal-heading h2 {
+  margin: 0;
+  font-size: clamp(23px, 5vw, 29px);
+  letter-spacing: -1px;
+}
+
+.auth-modal-heading > p:last-child {
+  margin: 9px 0 0;
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.auth-modal .auth-form {
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  margin-top: 22px;
+}
+
+.auth-form label {
+  color: #2d4036;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.auth-form > input,
+.auth-password-input input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid #dce6df;
+  border-radius: 10px;
+  outline: none;
+  background: #ffffff;
+  color: var(--color-ink);
+  font-size: 14px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.auth-form > input:focus,
+.auth-password-input input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgb(8 127 91 / 12%);
+}
+
+.auth-form input::placeholder {
+  color: #9aa8a0;
+}
+
+.auth-password-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.auth-inline-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.auth-inline-button:hover {
+  color: var(--color-primary-dark);
+}
+
+.auth-password-input {
+  position: relative;
+}
+
+.auth-password-input input {
+  padding-right: 64px;
+}
+
+.auth-toggle-password {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  padding: 4px 0;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.auth-remember,
+.auth-terms {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 6px;
+  color: #53645b !important;
+  cursor: pointer;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+
+.auth-remember {
+  width: fit-content;
+}
+
+.auth-terms {
+  align-items: flex-start;
+  line-height: 1.5;
+}
+
+.auth-remember input,
+.auth-terms input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.auth-terms input {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.auth-submit {
+  width: 100%;
+  min-height: 48px;
+  gap: 10px;
+  margin-top: 12px;
+  cursor: pointer;
+}
+
+.auth-message {
+  min-height: 18px;
+  margin: 0;
+  color: var(--color-primary-dark);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.auth-modal .auth-form > input,
+.auth-modal .auth-password-input,
+.auth-modal .auth-password-input input {
+  min-width: 0;
+}
+
+.auth-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  border: 0;
+  border-radius: 50%;
+  background: #f0f5f1;
+  color: #53645b;
+  cursor: pointer;
+}
+
+.auth-modal-close:hover {
+  background: #e4eee7;
+  color: var(--color-primary-dark);
+}
+
+.auth-modal-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+.auth-modal-switch {
+  margin: 18px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.auth-modal-switch button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: inherit;
+  font-weight: 700;
+}
+
+.auth-modal-switch button:hover {
+  color: var(--color-primary-dark);
+}
+
 @media (max-width: 800px) {
   .category-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
