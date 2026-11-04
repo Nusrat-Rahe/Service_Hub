@@ -71,10 +71,19 @@ textarea {
   flex: 0 0 auto;
   align-items: center;
   gap: 9px;
-  color: var(--color-primary);
+  color: var(--color-ink);
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.8px;
+}
+
+.brand-name {
+  display: inline-flex;
+  gap: 0;
+}
+
+.brand-hub {
+  color: var(--color-primary);
 }
 
 .brand-mark {

@@ -15,7 +15,9 @@ export default function SiteHeader() {
             <span className="brand-mark" aria-hidden="true">
               ⌂
             </span>
-            ServiceHub
+            <span className="brand-name">
+              Service<span className="brand-hub">Hub</span>
+            </span>
           </Link>
 
           <nav className="nav-links" aria-label="Main navigation">

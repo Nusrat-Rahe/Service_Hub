@@ -14,13 +14,13 @@ export default function HomePage() {
         <div className="container hero-content">
           <span className="eyebrow">Trusted help for your home</span>
           <h1>
-            Home services,
+            Your Home,
             <br />
-            <span>made simpler.</span>
+            <span>Our Responsibility.</span>
           </h1>
           <p>
-            Browse cleaning, repairs and more, then send your service request
-            directly to the ServiceHub admin team.
+            Browse cleaning, repairs and more, then book trusted professionals
+            directly through ServiceHub.
           </p>
           <form className="search-form" action="/services">
             <label className="sr-only" htmlFor="service-search">

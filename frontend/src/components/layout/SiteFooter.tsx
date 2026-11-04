@@ -10,7 +10,9 @@ export default function SiteFooter() {
               <span className="brand-mark" aria-hidden="true">
                 ⌂
               </span>
-              ServiceHub
+              <span className="brand-name">
+                Service<span className="brand-hub">Hub</span>
+              </span>
             </Link>
             <p className="footer-about">
               Find and book services managed directly by the ServiceHub team.
