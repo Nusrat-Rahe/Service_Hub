@@ -5,10 +5,10 @@ import "./public.css";
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
   return (
-    <>
+    <div className="public-layout">
       <SiteHeader />
       <main>{children}</main>
       <SiteFooter />
-    </>
+    </div>
   );
 }

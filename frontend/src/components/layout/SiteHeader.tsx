@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { House } from "lucide-react";
 import { useState } from "react";
 import AuthModal, { type AuthModalType } from "@/components/auth/AuthModal";
 
@@ -13,7 +14,7 @@ export default function SiteHeader() {
         <div className="container header-inner">
           <Link className="brand" href="/" aria-label="ServiceHub home">
             <span className="brand-mark" aria-hidden="true">
-              ⌂
+              <House size={21} strokeWidth={2.2} />
             </span>
             <span className="brand-name">
               Service<span className="brand-hub">Hub</span>
