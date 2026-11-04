@@ -7,8 +7,7 @@ const footerSections = [
     links: [
       { label: "Home", href: "/" },
       { label: "Services", href: "/services" },
-      { label: "About", href: "/about" },
-      { label: "Contact", href: "/contact" },
+      { label: "Contact", href: "/#contact" },
     ],
   },
   {
@@ -32,7 +31,7 @@ const footerSections = [
 
 export default function SiteFooter() {
   return (
-    <footer className="bg-[#103d32] text-white">
+    <footer id="contact" className="bg-[#103d32] text-white">
       <div className="container">
         <div className="grid grid-cols-1 gap-x-8 gap-y-10 py-12 sm:grid-cols-2 sm:py-14 lg:grid-cols-[1.4fr_repeat(3,minmax(0,1fr))] lg:gap-x-12">
           <div className="sm:col-span-2 lg:col-span-1">

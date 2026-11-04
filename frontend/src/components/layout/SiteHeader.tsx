@@ -24,7 +24,7 @@ export default function SiteHeader() {
           <nav className="nav-links" aria-label="Main navigation">
             <Link href="/">Home</Link>
             <Link href="/services">Services</Link>
-            <Link href="/about">About</Link>
+            <Link href="/#contact">Contact</Link>
           </nav>
 
           <div className="nav-actions">
