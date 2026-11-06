@@ -3,14 +3,39 @@
 import { useState } from "react";
 import type { SubmitEvent } from "react";
 import PasswordField from "@/components/auth/PasswordField";
+import { loginUser, type AuthUser } from "@/lib/auth";
 
-export default function LoginForm() {
+export default function LoginForm({
+  onSuccess,
+}: {
+  onSuccess: (user: AuthUser) => void;
+}) {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
-    setMessage("Login is not connected yet. Your details have not been sent.");
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    setIsSubmitting(true);
+    setMessage("");
+    try {
+      const result = await loginUser(
+        String(formData.get("email")),
+        String(formData.get("password")),
+      );
+      if (!result.user) {
+        throw new Error("Sign-in succeeded but account details were not returned.");
+      }
+      onSuccess(result.user);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Sign-in failed. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -29,11 +54,7 @@ export default function LoginForm() {
         <label htmlFor="password">Password</label>
         <button
           className="auth-inline-button"
-          onClick={() =>
-            setMessage(
-              "Password reset will be available when login is connected.",
-            )
-          }
+          onClick={() => setMessage("Password reset is not available yet.")}
           type="button"
         >
           Forgot Password?
@@ -56,8 +77,12 @@ export default function LoginForm() {
         <span>Remember me</span>
       </label>
 
-      <button className="button auth-submit" type="submit">
-        Sign in
+      <button
+        className="button auth-submit"
+        disabled={isSubmitting}
+        type="submit"
+      >
+        {isSubmitting ? "Signing in..." : "Sign in"}
       </button>
 
       <p className="auth-message" role="status" aria-live="polite">

@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import LoginForm from "@/components/auth/LoginForm";
 import RegisterForm from "@/components/auth/RegisterForm";
+import type { AuthUser } from "@/lib/auth";
 
 export type AuthModalType = "login" | "register";
 
@@ -10,12 +11,14 @@ type AuthModalProps = {
   type: AuthModalType | null;
   onClose: () => void;
   onSwitch: (type: AuthModalType) => void;
+  onSuccess: (user: AuthUser) => void;
 };
 
 export default function AuthModal({
   type,
   onClose,
   onSwitch,
+  onSuccess,
 }: AuthModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const isOpen = type !== null;
@@ -78,7 +81,7 @@ export default function AuthModal({
             </svg>
           </button>
           <div className="auth-modal-heading">
-            <p className="eyebrow">{isLogin ? "Welcome back" : "Get started"}</p>
+            <p className="eyebrow">{isLogin ? "Sign in" : "Get started"}</p>
             <h2 id="auth-modal-title">
               {isLogin ? "Sign in to ServiceHub" : "Create your account"}
             </h2>
@@ -89,7 +92,11 @@ export default function AuthModal({
             </p>
           </div>
 
-          {isLogin ? <LoginForm /> : <RegisterForm />}
+          {isLogin ? (
+            <LoginForm onSuccess={onSuccess} />
+          ) : (
+            <RegisterForm onSuccess={onSuccess} />
+          )}
 
           <p className="auth-modal-switch">
             {isLogin ? "New to ServiceHub?" : "Already have an account?"}{" "}

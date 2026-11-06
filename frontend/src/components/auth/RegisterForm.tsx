@@ -3,23 +3,46 @@
 import { useState } from "react";
 import type { SubmitEvent } from "react";
 import PasswordField from "@/components/auth/PasswordField";
+import { registerUser, type AuthUser } from "@/lib/auth";
 
-export default function RegisterForm() {
+export default function RegisterForm({
+  onSuccess,
+}: {
+  onSuccess: (user: AuthUser) => void;
+}) {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
     if (formData.get("password") !== formData.get("confirmPassword")) {
       setMessage("Passwords do not match. Please check and try again.");
       return;
     }
 
-    setMessage(
-      "Registration is not connected yet. Your details have not been sent or saved.",
-    );
+    setIsSubmitting(true);
+    setMessage("");
+    try {
+      const result = await registerUser(
+        String(formData.get("fullName")),
+        String(formData.get("email")),
+        String(formData.get("password")),
+      );
+      if (!result.user) {
+        throw new Error("Account was created but account details were not returned.");
+      }
+      onSuccess(result.user);
+    } catch (error) {
+      setMessage(
+        error instanceof Error ? error.message : "Registration failed. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -50,6 +73,7 @@ export default function RegisterForm() {
         autoComplete="new-password"
         id="password"
         minLength={8}
+        maxLength={72}
         name="password"
         onToggleVisibility={() =>
           setShowPassword((isVisible) => !isVisible)
@@ -75,8 +99,12 @@ export default function RegisterForm() {
         <span>I agree to the terms and privacy policy.</span>
       </label>
 
-      <button className="button auth-submit" type="submit">
-        Create Account
+      <button
+        className="button auth-submit"
+        disabled={isSubmitting}
+        type="submit"
+      >
+        {isSubmitting ? "Creating account..." : "Create Account"}
       </button>
 
       <p className="auth-message" role="status" aria-live="polite">

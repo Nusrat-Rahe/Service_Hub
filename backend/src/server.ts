@@ -1,18 +1,23 @@
 import "dotenv/config";
 
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
 import mongoose from "mongoose";
+import authRouter from "./routes/auth";
 
 const app = express();
 
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "http://localhost:3000",
+    credentials: true,
   })
 );
 
 app.use(express.json());
+app.use(cookieParser());
+app.use("/api/auth", authRouter);
 
 app.get("/", (req, res) => {
   res.json({
@@ -27,6 +32,9 @@ async function startServer() {
   if (!mongoUri) {
     throw new Error("MONGODB_URI is required to start the server.");
   }
+  if (!process.env.JWT_SECRET || Buffer.byteLength(process.env.JWT_SECRET) < 32) {
+    throw new Error("JWT_SECRET must be set to a random value at least 32 bytes long.");
+  }
 
   await mongoose.connect(mongoUri);
 
@@ -36,8 +44,20 @@ async function startServer() {
   });
 }
 
+app.use(
+  (
+    error: unknown,
+    _req: express.Request,
+    res: express.Response,
+    _next: express.NextFunction,
+  ) => {
+    console.error("Unhandled request error:", error);
+    res.status(500).json({ message: "An unexpected server error occurred." });
+  },
+);
+
 startServer().catch((error: unknown) => {
-  console.error("MongoDB connection failed. Check MONGODB_URI and Atlas network access.");
+  console.error("Server startup failed. Check required environment settings and Atlas access.");
   if (error instanceof Error) {
     const safeMessage = error.message.replace(
       /(mongodb(?:\+srv)?:\/\/)[^@\s]+@/gi,
