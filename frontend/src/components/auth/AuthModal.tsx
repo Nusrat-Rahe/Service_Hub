@@ -75,7 +75,7 @@ export default function AuthModal({
                 d="m6 6 12 12M18 6 6 18"
                 fill="none"
                 stroke="currentColor"
-                strokeLinecap="round"
+                strokeLinecap= "round"
                 strokeWidth="2"
               />
             </svg>
