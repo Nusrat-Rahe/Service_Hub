@@ -1,5 +1,5 @@
-import ComingSoonPage from "@/components/shared/ComingSoonPage";
+import DashboardOverview from "../DashboardOverview";
 
 export default function AdminDashboardPage() {
-  return <ComingSoonPage title="Admin dashboard" />;
+  return <DashboardOverview />;
 }

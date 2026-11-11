@@ -419,6 +419,26 @@
   flex: 1;
 }
 
+.customer-bookings-notice-action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  color: #0e7c5a;
+  font-size: 10px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.customer-dashboard-error {
+  margin: 0 0 15px;
+  padding: 11px 13px;
+  border-radius: 8px;
+  background: #fff1ef;
+  color: #ac4a43;
+  font-size: 11px;
+}
+
 .customer-notice-label {
   color: #8c9a91;
   font-size: 8px;

@@ -5,6 +5,10 @@ import cors from "cors";
 import express from "express";
 import mongoose from "mongoose";
 import authRouter from "./routes/auth";
+import adminRouter from "./routes/admin";
+import servicesRouter from "./routes/services";
+import userRouter from "./routes/user";
+import { seedServices } from "./seedServices";
 
 const app = express();
 
@@ -18,6 +22,9 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 app.use("/api/auth", authRouter);
+app.use("/api/admin", adminRouter);
+app.use("/api/services", servicesRouter);
+app.use("/api/user", userRouter);
 
 app.get("/", (req, res) => {
   res.json({
@@ -37,6 +44,7 @@ async function startServer() {
   }
 
   await mongoose.connect(mongoUri);
+  await seedServices();
 
   const port = Number(process.env.PORT ?? 5000);
   app.listen(port, () => {

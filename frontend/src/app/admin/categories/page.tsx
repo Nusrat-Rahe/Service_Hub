@@ -1,5 +1,5 @@
-import ComingSoonPage from "@/components/shared/ComingSoonPage";
+import { redirect } from "next/navigation";
 
 export default function AdminCategoriesPage() {
-  return <ComingSoonPage title="Category management" />;
+  redirect("/admin/services");
 }

@@ -138,6 +138,10 @@ router.post(
         res.status(401).json({ message: "Invalid email or password." });
         return;
       }
+      if (user.status === "Inactive") {
+        res.status(403).json({ message: "This account is inactive. Please contact ServiceHub support." });
+        return;
+      }
 
       setAuthCookie(res, user);
       res.json({
@@ -180,7 +184,7 @@ router.get(
 
     try {
       const user = await User.findById(userId);
-      if (!user) {
+      if (!user || user.status === "Inactive") {
         res.clearCookie(cookieName, cookieOptions());
         res.status(401).json({ message: "Your account could not be found." });
         return;

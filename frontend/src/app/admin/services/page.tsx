@@ -1,5 +1,5 @@
-import ComingSoonPage from "@/components/shared/ComingSoonPage";
+import AdminManagementPage from "../AdminManagementPage";
 
 export default function AdminServicesPage() {
-  return <ComingSoonPage title="Service management" />;
+  return <AdminManagementPage section="services" />;
 }

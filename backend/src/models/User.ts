@@ -27,6 +27,12 @@ const userSchema = new Schema(
       default: "user",
       required: true,
     },
+    status: {
+      type: String,
+      enum: ["Active", "Inactive"],
+      default: "Active",
+      required: true,
+    },
   },
   { timestamps: true },
 );

@@ -1,5 +1,5 @@
-import ComingSoonPage from "@/components/shared/ComingSoonPage";
+import AdminManagementPage from "../AdminManagementPage";
 
 export default function AdminReviewsPage() {
-  return <ComingSoonPage title="Review moderation" />;
+  return <AdminManagementPage section="reviews" />;
 }

@@ -1,5 +1,5 @@
-import ComingSoonPage from "@/components/shared/ComingSoonPage";
+import { redirect } from "next/navigation";
 
 export default function AdminUsersPage() {
-  return <ComingSoonPage title="User management" />;
+  redirect("/admin/customers");
 }

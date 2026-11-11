@@ -6,7 +6,6 @@ import {
   Bell,
   CalendarDays,
   ChevronRight,
-  Clock3,
   Hammer,
   Heart,
   Home,
@@ -25,9 +24,10 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { logoutUser } from "@/lib/auth";
+import { getMyBookings, getServices, type BookingRecord, type ServiceRecord } from "@/lib/api";
 import "./dashboard.css";
 
 const serviceCategories: {
@@ -90,14 +90,13 @@ const navigation: {
   name: string;
   href: string;
   icon: LucideIcon;
-  soon?: boolean;
 }[] = [
   { name: "Home", href: "/", icon: Home },
   { name: "Dashboard", href: "/user/dashboard", icon: LayoutDashboard },
   { name: "Browse Services", href: "/services", icon: Search },
-  { name: "My Bookings", href: "/user/bookings", icon: CalendarDays, soon: true },
-  { name: "Notifications", href: "/user/notifications", icon: Bell, soon: true },
-  { name: "Profile", href: "/user/profile", icon: UserRound, soon: true },
+  { name: "My Bookings", href: "/user/bookings", icon: CalendarDays },
+  { name: "Notifications", href: "/user/notifications", icon: Bell },
+  { name: "Profile", href: "/user/profile", icon: UserRound },
 ];
 
 function getInitials(name: string) {
@@ -160,7 +159,7 @@ function Sidebar({
 
         <p className="customer-sidebar-label">MENU</p>
         <nav className="customer-nav">
-          {navigation.map(({ name, href, icon: Icon, soon }) => {
+          {navigation.map(({ name, href, icon: Icon }) => {
             const active =
               pathname === href ||
               (href !== "/user/dashboard" && pathname.startsWith(`${href}/`));
@@ -174,7 +173,6 @@ function Sidebar({
               >
                 <Icon aria-hidden="true" size={19} strokeWidth={1.8} />
                 <span>{name}</span>
-                {soon && <span className="customer-nav-soon">Soon</span>}
               </Link>
             );
           })}
@@ -247,7 +245,7 @@ function SearchBar({
 function CategoryGrid({
   categories,
 }: {
-  categories: typeof serviceCategories;
+  categories: ServiceRecord[];
 }) {
   if (!categories.length) {
     return (
@@ -259,26 +257,17 @@ function CategoryGrid({
 
   return (
     <div className="customer-category-grid">
-      {categories.map(({ name, description, icon: Icon, color }) => (
-        <Link
-          className="customer-category-card"
-          href={`/services?category=${encodeURIComponent(name)}`}
-          key={name}
-        >
-          <span className={`customer-category-icon ${color}`}>
-            <Icon aria-hidden="true" size={22} strokeWidth={1.8} />
-          </span>
-          <span className="customer-category-copy">
-            <strong>{name}</strong>
-            <small>{description}</small>
-          </span>
-          <ChevronRight
-            aria-hidden="true"
-            className="customer-category-arrow"
-            size={16}
-          />
-        </Link>
-      ))}
+      {categories.map((service) => {
+        const presentation = serviceCategories.find(
+          (category) => category.name.toLowerCase() === service.name.toLowerCase(),
+        ) ?? serviceCategories[1];
+        const Icon = presentation.icon;
+        return <Link className="customer-category-card" href={`/services?category=${encodeURIComponent(service.name)}`} key={service._id}>
+          <span className={`customer-category-icon ${presentation.color}`}><Icon aria-hidden="true" size={22} strokeWidth={1.8} /></span>
+          <span className="customer-category-copy"><strong>{service.name}</strong><small>{service.description}</small></span>
+          <ChevronRight aria-hidden="true" className="customer-category-arrow" size={16} />
+        </Link>;
+      })}
     </div>
   );
 }
@@ -314,6 +303,9 @@ export default function UserDashboardPage() {
   const { user, setUser } = useAuth();
   const [search, setSearch] = useState("");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [serviceRecords, setServiceRecords] = useState<ServiceRecord[]>([]);
+  const [bookings, setBookings] = useState<BookingRecord[]>([]);
+  const [dashboardError, setDashboardError] = useState("");
   const name = user?.fullName || "there";
   const today = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
@@ -323,12 +315,28 @@ export default function UserDashboardPage() {
 
   const filteredCategories = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return serviceCategories;
-    return serviceCategories.filter(
-      ({ name, description }) =>
-        `${name} ${description}`.toLowerCase().includes(query),
+    if (!query) return serviceRecords;
+    return serviceRecords.filter(
+      ({ name, description, category }) =>
+        `${name} ${description} ${category}`.toLowerCase().includes(query),
     );
-  }, [search]);
+  }, [search, serviceRecords]);
+  const activeBookings = bookings.filter((booking) => !["Cancelled", "Completed"].includes(booking.status));
+  const nextBooking = activeBookings[0];
+
+  useEffect(() => {
+    let active = true;
+    Promise.all([getServices(), getMyBookings()])
+      .then(([serviceResponse, bookingResponse]) => {
+        if (!active) return;
+        setServiceRecords(serviceResponse.services);
+        setBookings(bookingResponse.bookings);
+      })
+      .catch((error: unknown) => {
+        if (active) setDashboardError(error instanceof Error ? error.message : "Could not load your dashboard.");
+      });
+    return () => { active = false; };
+  }, []);
 
   async function handleLogout() {
     try {
@@ -392,23 +400,17 @@ export default function UserDashboardPage() {
             </Link>
           </section>
 
+          {dashboardError && <p className="customer-dashboard-error" role="alert">{dashboardError}</p>}
           <section aria-labelledby="bookings-title" className="customer-bookings-notice">
             <span className="customer-bookings-notice-icon">
               <CalendarDays aria-hidden="true" size={20} />
             </span>
             <div>
               <span className="customer-notice-label">MY BOOKINGS</span>
-              <h2 id="bookings-title">Booking management isn’t available yet</h2>
-              <p>
-                Booking requests and history aren’t supported in the project
-                yet. Once implemented, you’ll be able to track them here.
-              </p>
+              <h2 id="bookings-title">{activeBookings.length ? `${activeBookings.length} active booking${activeBookings.length === 1 ? "" : "s"}` : "Ready to book your next service?"}</h2>
+              <p>{nextBooking ? `${nextBooking.serviceName} · ${new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(nextBooking.date))} · ${nextBooking.status}` : "Your booking requests and history will appear here."}</p>
             </div>
-            <Clock3
-              aria-hidden="true"
-              className="customer-bookings-notice-clock"
-              size={18}
-            />
+            <Link className="customer-bookings-notice-action" href="/user/bookings">View my bookings <ChevronRight size={15} /></Link>
           </section>
 
           <section aria-label="Service categories" className="customer-section">

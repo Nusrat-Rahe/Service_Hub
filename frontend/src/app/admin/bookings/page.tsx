@@ -1,10 +1,5 @@
-import ComingSoonPage from "@/components/shared/ComingSoonPage";
+import AdminManagementPage from "../AdminManagementPage";
 
 export default function AdminBookingsPage() {
-  return (
-    <ComingSoonPage
-      title="Booking management"
-      description="Admins handle user booking requests directly and keep users updated on each request's status."
-    />
-  );
+  return <AdminManagementPage section="bookings" />;
 }
