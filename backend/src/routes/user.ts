@@ -3,16 +3,29 @@ import { Router } from "express";
 import mongoose from "mongoose";
 import { requireAuth } from "../middleware/requireAuth";
 import { Booking } from "../models/Booking";
+import { AdminBookingNotification } from "../models/AdminBookingNotification";
 import { Notification } from "../models/Notification";
 import { Review } from "../models/Review";
 import { Service } from "../models/Service";
 import { User } from "../models/User";
+import { emitBookingNotification } from "../realtime";
 
 const router = Router();
 router.use(requireAuth);
 
 function isText(value: unknown, maxLength: number): value is string {
   return typeof value === "string" && value.trim().length > 0 && value.trim().length <= maxLength;
+}
+
+function getDhakaDateKey(date: Date): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Dhaka",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+  return `${values.year}-${values.month}-${values.day}`;
 }
 
 router.use((req, res, next) => {
@@ -90,12 +103,14 @@ router.get("/bookings", async (req, res, next) => {
 
 router.post("/bookings", async (req, res, next) => {
   const { serviceId, date, address, notes } = req.body as Record<string, unknown>;
+  const bookingDate = typeof date === "string" ? new Date(date) : null;
   if (
     typeof serviceId !== "string" ||
     !mongoose.isValidObjectId(serviceId) ||
     typeof date !== "string" ||
-    !Number.isFinite(Date.parse(date)) ||
-    Date.parse(date) <= Date.now() ||
+    !bookingDate ||
+    !Number.isFinite(bookingDate.getTime()) ||
+    getDhakaDateKey(bookingDate) < getDhakaDateKey(new Date()) ||
     !isText(address, 300) ||
     (notes !== undefined && typeof notes !== "string") ||
     (typeof notes === "string" && notes.length > 1000)
@@ -124,10 +139,26 @@ router.post("/bookings", async (req, res, next) => {
       customerEmail: customer.email,
       serviceId: service.id,
       serviceName: service.name,
-      date: new Date(date),
+      date: bookingDate,
       address: address.trim(),
       notes: typeof notes === "string" ? notes.trim() : "",
       price: service.price,
+    });
+    const adminNotification = await AdminBookingNotification.create({
+      bookingRef: booking._id,
+      bookingId: booking.bookingId,
+      customerName: booking.customerName,
+      serviceName: booking.serviceName,
+      appointmentDate: booking.date,
+    });
+    emitBookingNotification({
+      _id: adminNotification.id,
+      bookingRef: booking.id,
+      bookingId: adminNotification.bookingId,
+      customerName: adminNotification.customerName,
+      serviceName: adminNotification.serviceName,
+      appointmentDate: adminNotification.appointmentDate,
+      createdAt: adminNotification.createdAt,
     });
     res.status(201).json({ booking });
   } catch (error) {

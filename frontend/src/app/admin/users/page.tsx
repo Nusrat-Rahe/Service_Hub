@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import AdminManagementPage from "../AdminManagementPage";
 
 export default function AdminUsersPage() {
-  redirect("/admin/customers");
+  return <AdminManagementPage section="customers" />;
 }

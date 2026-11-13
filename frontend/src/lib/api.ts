@@ -248,6 +248,36 @@ export type BookingRecord = {
   paymentStatus: "Pending" | "Paid" | "Refunded";
 };
 
+export type AdminBookingNotification = {
+  _id: string;
+  bookingRef: string;
+  bookingId: string;
+  customerName: string;
+  serviceName: string;
+  appointmentDate: string;
+  createdAt: string;
+  isRead: boolean;
+};
+
+export function getAdminBookingNotifications() {
+  return apiRequest<{ notifications: AdminBookingNotification[]; unreadCount: number }>(
+    "/api/admin/booking-notifications",
+  );
+}
+
+export function markAdminBookingNotificationRead(id: string) {
+  return apiRequest<{ message: string }>(
+    `/api/admin/booking-notifications/${encodeURIComponent(id)}/read`,
+    { method: "PATCH" },
+  );
+}
+
+export function markAllAdminBookingNotificationsRead() {
+  return apiRequest<{ message: string }>("/api/admin/booking-notifications/read-all", {
+    method: "PATCH",
+  });
+}
+
 export function getMyBookings() {
   return apiRequest<{ bookings: BookingRecord[] }>("/api/user/bookings");
 }

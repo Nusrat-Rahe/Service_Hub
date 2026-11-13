@@ -10,6 +10,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import type { AuthUser } from "@/lib/auth";
 import { createBooking, getService, type ServiceRecord } from "@/lib/api";
 import { logoutUser } from "@/lib/auth";
+import { parseDhakaDateTime, useDhakaToday } from "@/lib/dhaka-date";
 import { formatMoney } from "@/lib/money";
 
 export default function BookingRequestPage() {
@@ -27,6 +28,7 @@ function BookingRequestContent() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authModal, setAuthModal] = useState<AuthModalType | null>(null);
+  const today = useDhakaToday();
 
   useEffect(() => {
     let active = true;
@@ -40,15 +42,16 @@ function BookingRequestContent() {
     event.preventDefault();
     if (!user || !service) return;
     setError("");
-    if (!date || new Date(date).getTime() <= Date.now()) {
-      setError("Choose a future appointment date and time.");
+    const appointmentDate = parseDhakaDateTime(date);
+    if (!appointmentDate || date.slice(0, 10) < today) {
+      setError("Choose today or a future appointment date.");
       return;
     }
     setIsSubmitting(true);
     try {
       const { booking } = await createBooking({
         serviceId: service._id,
-        date: new Date(date).toISOString(),
+        date: appointmentDate.toISOString(),
         address,
         notes,
       });
@@ -87,7 +90,8 @@ function BookingRequestContent() {
           {!isLoadingUser && !user ? <div className="service-login-prompt"><p>Sign in to your ServiceHub account to request this service.</p><button className="button" onClick={() => setAuthModal("login")} type="button">Sign in to continue</button></div> : user?.role === "admin" ? <div className="service-login-prompt"><p>A customer account is required to request a service.</p><Link className="button" href="/admin/dashboard">Go to admin dashboard</Link></div> : (
             <form className="service-booking-form" onSubmit={submitBooking}>
               <label htmlFor="booking-date">Preferred date and time</label>
-              <div className="service-form-input"><CalendarDays size={17} /><input id="booking-date" onChange={(event) => setDate(event.target.value)} required type="datetime-local" value={date} /></div>
+              <div className="service-form-input"><CalendarDays size={17} /><input id="booking-date" min={`${today}T00:00`} onChange={(event) => setDate(event.target.value)} required type="datetime-local" value={date} /></div>
+              <p className="service-payment-note">Appointment times use Bangladesh Standard Time (Asia/Dhaka).</p>
               <label htmlFor="booking-address">Service address</label>
               <div className="service-form-input"><MapPin size={17} /><input autoComplete="street-address" id="booking-address" maxLength={300} onChange={(event) => setAddress(event.target.value)} placeholder="Street address, city" required value={address} /></div>
               <label htmlFor="booking-notes">Anything else we should know? <span>(optional)</span></label>

@@ -4,12 +4,23 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell, CalendarDays, ChartNoAxesCombined, ChevronDown, ChevronLeft,
-  ChevronRight, CircleDollarSign, House, LayoutDashboard, LogOut, Menu,
+  ChevronRight, House, LayoutDashboard, LogOut, Menu,
   MessageSquareText, Search, Settings2, ShieldCheck, Sparkles, Users, X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { io } from "socket.io-client";
 import { useAuth } from "@/components/auth/AuthProvider";
+import TakaSign from "@/components/shared/TakaSign";
 import { logoutUser } from "@/lib/auth";
+import { formatDhakaDate, useDhakaToday } from "@/lib/dhaka-date";
+import {
+  getAdminBookingNotifications,
+  markAdminBookingNotificationRead,
+  markAllAdminBookingNotificationsRead,
+  type AdminBookingNotification,
+} from "@/lib/api";
+
+const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
 
 const primaryLinks = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
@@ -18,7 +29,7 @@ const primaryLinks = [
   { label: "Bookings", href: "/admin/bookings", icon: CalendarDays },
 ];
 const secondaryLinks = [
-  { label: "Payments", href: "/admin/payments", icon: CircleDollarSign },
+  { label: "Payments", href: "/admin/payments", icon: TakaSign },
   { label: "Reviews", href: "/admin/reviews", icon: MessageSquareText },
   { label: "Notifications", href: "/admin/notifications", icon: Bell },
   { label: "Reports & analytics", href: "/admin/reports", icon: ChartNoAxesCombined },
@@ -33,6 +44,48 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState<AdminBookingNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationError, setNotificationError] = useState("");
+  const [markingAllRead, setMarkingAllRead] = useState(false);
+  const today = useDhakaToday();
+
+  useEffect(() => {
+    let active = true;
+    const refreshNotifications = () => {
+      getAdminBookingNotifications()
+        .then((result) => {
+          if (!active) return;
+          setNotifications(result.notifications);
+          setUnreadCount(result.unreadCount);
+          setNotificationError("");
+        })
+        .catch((error: unknown) => {
+          if (active) setNotificationError(error instanceof Error ? error.message : "Could not load notifications.");
+        });
+    };
+
+    refreshNotifications();
+    const socket = io(apiUrl, { withCredentials: true });
+    socket.on("connect", refreshNotifications);
+    socket.on("booking-notification", (notification: AdminBookingNotification) => {
+      setNotifications((current) => [
+        notification,
+        ...current.filter((item) => item._id !== notification._id),
+      ].slice(0, 30));
+      setUnreadCount((count) => count + 1);
+      setNotificationError("");
+    });
+    socket.on("connect_error", () => {
+      setNotificationError("Live notifications are temporarily unavailable.");
+    });
+
+    return () => {
+      active = false;
+      socket.disconnect();
+    };
+  }, []);
 
   async function handleLogout() {
     try {
@@ -42,6 +95,43 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     } catch (error) {
       console.error("Could not sign out.", error);
     }
+  }
+
+  async function handleMarkRead(notification: AdminBookingNotification) {
+    if (notification.isRead) return;
+    try {
+      await markAdminBookingNotificationRead(notification._id);
+      setNotifications((items) => items.map((item) => item._id === notification._id ? { ...item, isRead: true } : item));
+      setUnreadCount((count) => Math.max(0, count - 1));
+    } catch (error) {
+      setNotificationError(error instanceof Error ? error.message : "Could not mark notification as read.");
+    }
+  }
+
+  async function handleMarkAllRead() {
+    setMarkingAllRead(true);
+    try {
+      await markAllAdminBookingNotificationsRead();
+      const result = await getAdminBookingNotifications();
+      setNotifications(result.notifications);
+      setUnreadCount(result.unreadCount);
+      setNotificationError("");
+    } catch (error) {
+      setNotificationError(error instanceof Error ? error.message : "Could not mark notifications as read.");
+    } finally {
+      setMarkingAllRead(false);
+    }
+  }
+
+  function formatNotificationDate(value: string) {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "Asia/Dhaka",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(new Date(value));
   }
 
   function renderLinks(items: typeof primaryLinks) {
@@ -58,7 +148,6 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
         >
           <Icon aria-hidden="true" size={19} strokeWidth={1.8} />
           <span>{label}</span>
-          {label === "Bookings" && <span className="admin-nav-count">8</span>}
         </Link>
       );
     });
@@ -98,8 +187,30 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           <button aria-label="Open navigation" className="admin-mobile-menu" onClick={() => setMobileOpen(true)} type="button"><Menu size={21} /></button>
           <div className="admin-topbar-search"><Search aria-hidden="true" size={17} /><input aria-label="Search dashboard" onChange={(event) => setSearch(event.target.value)} placeholder="Search anything..." value={search} /><kbd>⌘ K</kbd></div>
           <div className="admin-topbar-actions">
-            <span className="admin-topbar-date">Tuesday, November 18</span>
-            <Link aria-label="Notifications (3 unread)" className="admin-icon-button admin-notification-button" href="/admin/notifications"><Bell size={19} /><i>3</i></Link>
+            <time className="admin-topbar-date" dateTime={today}>{formatDhakaDate(today)}</time>
+            <div className="admin-notification-wrap">
+              <button aria-expanded={notificationOpen} aria-label={`Notifications${unreadCount ? ` (${unreadCount} unread)` : ""}`} className="admin-icon-button admin-notification-button" onClick={() => setNotificationOpen((open) => !open)} type="button">
+                <Bell size={19} />{unreadCount > 0 && <i>{unreadCount > 99 ? "99+" : unreadCount}</i>}
+              </button>
+              {notificationOpen && <section aria-label="Booking notifications" className="admin-notification-panel">
+                <div className="admin-notification-heading"><div><strong>Notifications</strong><small>{unreadCount} unread</small></div><button disabled={markingAllRead || unreadCount === 0} onClick={handleMarkAllRead} type="button">Mark all as read</button></div>
+                {notificationError && <p className="admin-notification-error" role="alert">{notificationError}</p>}
+                <div className="admin-notification-list">
+                  {notifications.length === 0 ? <p className="admin-notification-empty">No booking notifications yet.</p> : notifications.map((notification) => (
+                    <article className={`admin-notification-item${notification.isRead ? "" : " is-unread"}`} key={notification._id}>
+                      <button className="admin-notification-content" onClick={() => { void handleMarkRead(notification); setNotificationOpen(false); router.push("/admin/bookings"); }} type="button">
+                        <strong>{notification.customerName} booked {notification.serviceName}</strong>
+                        <span>Booking {notification.bookingId}</span>
+                        <small>Appointment: {formatNotificationDate(notification.appointmentDate)}</small>
+                        <small>Requested: {formatNotificationDate(notification.createdAt)}</small>
+                      </button>
+                      {!notification.isRead && <button className="admin-notification-read" onClick={() => void handleMarkRead(notification)} type="button">Mark as read</button>}
+                    </article>
+                  ))}
+                </div>
+                <Link className="admin-notification-footer" href="/admin/bookings" onClick={() => setNotificationOpen(false)}>View all bookings <ChevronRight size={14} /></Link>
+              </section>}
+            </div>
             <div className="admin-profile-wrap">
               <button aria-expanded={profileOpen} className="admin-profile-button" onClick={() => setProfileOpen(!profileOpen)} type="button">
                 <span className="admin-avatar">{user?.fullName?.charAt(0).toUpperCase() ?? "A"}</span>

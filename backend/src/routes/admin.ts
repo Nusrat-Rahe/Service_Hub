@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import { Booking } from "../models/Booking";
+import { AdminBookingNotification } from "../models/AdminBookingNotification";
 import { Notification } from "../models/Notification";
 import { Payment } from "../models/Payment";
 import { Review } from "../models/Review";
@@ -12,6 +13,60 @@ import { requireAdmin } from "../middleware/requireAdmin";
 
 const router = Router();
 router.use(requireAdmin);
+
+router.get("/booking-notifications", async (req, res, next) => {
+  try {
+    const [notifications, unreadCount] = await Promise.all([
+      AdminBookingNotification.find()
+        .sort({ createdAt: -1 })
+        .limit(30)
+        .lean(),
+      AdminBookingNotification.countDocuments({ readBy: { $ne: req.authUserId } }),
+    ]);
+    res.json({
+      notifications: notifications.map((notification) => ({
+        ...notification,
+        isRead: notification.readBy.some((id) => id.toString() === req.authUserId),
+      })),
+      unreadCount,
+    });
+  } catch (error) {
+    routeError(next, error);
+  }
+});
+
+router.patch("/booking-notifications/read-all", async (req, res, next) => {
+  try {
+    await AdminBookingNotification.updateMany(
+      { readBy: { $ne: req.authUserId } },
+      { $addToSet: { readBy: req.authUserId } },
+    );
+    res.json({ message: "All booking notifications marked as read." });
+  } catch (error) {
+    routeError(next, error);
+  }
+});
+
+router.patch("/booking-notifications/:id/read", async (req, res, next) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(400).json({ message: "Invalid booking notification ID." });
+    return;
+  }
+  try {
+    const notification = await AdminBookingNotification.findByIdAndUpdate(
+      req.params.id,
+      { $addToSet: { readBy: req.authUserId } },
+      { new: true },
+    ).lean();
+    if (!notification) {
+      res.status(404).json({ message: "Booking notification not found." });
+      return;
+    }
+    res.json({ message: "Booking notification marked as read." });
+  } catch (error) {
+    routeError(next, error);
+  }
+});
 
 function routeError(next: NextFunction, error: unknown) {
   next(error);

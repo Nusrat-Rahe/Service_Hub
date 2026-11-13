@@ -110,6 +110,26 @@
 .admin-topbar-date { color: #7a8a82; font-size: 10px; white-space: nowrap; }
 .admin-icon-button { position: relative; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid #e8efeb; border-radius: 9px; background: #fff; color: #586d62; cursor: pointer; }
 .admin-notification-button i { position: absolute; top: -4px; right: -4px; width: 15px; height: 15px; display: grid; place-items: center; border: 2px solid #fff; border-radius: 50%; background: #e16c60; color: #fff; font-size: 8px; font-style: normal; }
+.admin-notification-wrap { position: relative; }
+.admin-notification-panel { position: absolute; z-index: 40; top: calc(100% + 13px); right: -54px; width: min(390px, calc(100vw - 28px)); overflow: hidden; border: 1px solid var(--admin-border); border-radius: 12px; background: #fff; box-shadow: 0 16px 42px rgb(10 46 31 / 17%); }
+.admin-notification-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 15px; border-bottom: 1px solid #edf2ef; }
+.admin-notification-heading > div { display: grid; gap: 4px; }
+.admin-notification-heading strong { color: #294337; font-size: 13px; }
+.admin-notification-heading small { color: #8a9991; font-size: 10px; }
+.admin-notification-heading button, .admin-notification-read { padding: 5px 7px; border: 0; border-radius: 6px; background: transparent; color: #087f5b; cursor: pointer; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.admin-notification-heading button:hover, .admin-notification-read:hover { background: #eef8f3; }
+.admin-notification-heading button:disabled { color: #a4afa9; cursor: default; }
+.admin-notification-list { max-height: 390px; overflow-y: auto; }
+.admin-notification-item { position: relative; padding: 10px 12px; border-bottom: 1px solid #f0f3f1; }
+.admin-notification-item.is-unread { background: #f5fbf8; }
+.admin-notification-content { width: 100%; display: grid; gap: 5px; padding: 2px 68px 2px 2px; border: 0; background: transparent; color: inherit; cursor: pointer; text-align: left; }
+.admin-notification-content strong { color: #344c40; font-size: 11px; line-height: 1.4; }
+.admin-notification-content span { color: #0b805b; font-size: 10px; font-weight: 700; }
+.admin-notification-content small { color: #8a9891; font-size: 9px; }
+.admin-notification-read { position: absolute; top: 50%; right: 9px; transform: translateY(-50%); }
+.admin-notification-empty { padding: 26px 15px; color: #839188; font-size: 11px; text-align: center; }
+.admin-notification-error { margin: 0; padding: 8px 12px; background: #fff4f2; color: #b04f47; font-size: 10px; }
+.admin-notification-footer { min-height: 40px; display: flex; align-items: center; justify-content: center; gap: 5px; color: #607c6e; font-size: 10px; font-weight: 700; }
 .admin-profile-wrap { position: relative; }
 .admin-profile-button { display: flex; align-items: center; gap: 9px; padding: 0; border: 0; background: none; color: #52655c; cursor: pointer; text-align: left; }
 .admin-profile-copy { display: grid; gap: 4px; }
@@ -277,7 +297,8 @@
 .admin-login-input:focus-within { border-color: #79c7a2; box-shadow: 0 0 0 3px #e8f7ef; }
 .admin-login-input input { min-width: 0; flex: 1; border: 0; outline: 0; color: #294438; font-size: 11px; }
 .admin-login-input input::placeholder { color: #aab4ae; }
-.admin-login-submit { width: 100%; min-height: 42px; margin-top: 9px; font-size: 11px; }
+.admin-login-submit { width: 100%; min-height: 42px; margin-top: 9px; border-color: #075b46; background: #075b46; color: #fff; font-size: 11px; }
+.admin-login-submit:hover { border-color: #064b3a; background: #064b3a; }
 .admin-login-error { margin: 2px 0 !important; color: #b94f4a !important; font-size: 10px !important; }
 .admin-login-security { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 19px; color: #94a198; font-size: 9px; }
 .admin-login-footer { margin-top: 24px; color: #96a49b; font-size: 9px; }
@@ -324,6 +345,7 @@
   .admin-topbar-search { width: auto; min-width: 0; flex: 1; height: 35px; }
   .admin-topbar-search kbd, .admin-topbar-date, .admin-profile-copy, .admin-profile-button > svg { display: none; }
   .admin-topbar-actions { gap: 8px; }
+  .admin-notification-panel { right: -48px; }
   .admin-profile-button .admin-avatar { width: 31px; height: 31px; }
   .admin-icon-button { width: 32px; height: 32px; }
   .admin-content { padding: 22px 14px 30px; }

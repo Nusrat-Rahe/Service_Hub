@@ -6,15 +6,15 @@ import { useSearchParams } from "next/navigation";
 import { getServices, type ServiceRecord } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
 
-const serviceIcons: Record<string, string> = {
-  cleaning: "🧹",
-  plumbing: "🔧",
-  electrical: "💡",
-  "ac repair": "❄️",
-  painting: "🎨",
-  "pest control": "🐜",
-  "appliance repair": "🛠️",
-  "moving & shifting": "🚚",
+const serviceImages: Record<string, string> = {
+  cleaning: "/images/services/cleaning.jpg",
+  plumbing: "/images/services/plumbing.jpg",
+  electrical: "/images/services/electrical.jpg",
+  "ac repair": "/images/services/ac-repair.jpg",
+  painting: "/images/services/painting.png",
+  "pest control": "/images/services/pest%20control.jpg",
+  "appliance repair": "/images/services/applience%20repair.jpeg",
+  "moving & shifting": "/images/services/moving%20%26%20shifting.png",
 };
 
 function ServiceDirectoryContent() {
@@ -81,7 +81,21 @@ function ServiceDirectoryContent() {
           })}
         </nav>
         {error ? <div className="services-empty"><h3>Services are temporarily unavailable</h3><p>{error}</p></div> : filteredServices.length ? (
-          <div className="services-grid">{filteredServices.map((service) => <Link className="service-tile" href={`/services/${service._id}`} key={service._id}><span className="service-tile-icon" aria-hidden="true">{serviceIcons[service.name.toLocaleLowerCase()] ?? "🏠"}</span><span className="service-tile-arrow" aria-hidden="true">↗</span><h3>{service.name}</h3><p>{service.description}</p><span className="service-tile-link">From {formatMoney(service.price)} <span aria-hidden="true">→</span></span></Link>)}</div>
+          <div className="services-grid">{filteredServices.map((service) => {
+            const serviceKey = service.name.toLocaleLowerCase();
+            const image = serviceImages[serviceKey];
+            return (
+              <Link className={`service-tile${image ? " has-image" : ""}`} href={`/services/${service._id}`} key={service._id}>
+                {image ? (
+                  <span className="service-tile-image" style={{ backgroundImage: `url("${image}")` }} />
+                ) : null}
+                <span className="service-tile-arrow" aria-hidden="true">↗</span>
+                <h3>{service.name}</h3>
+                <p>{service.description}</p>
+                <span className="service-tile-link">From {formatMoney(service.price)} <span aria-hidden="true">→</span></span>
+              </Link>
+            );
+          })}</div>
         ) : !isLoading ? <div className="services-empty"><span aria-hidden="true">⌕</span><h3>{services.length ? "No services found" : "No services are available yet"}</h3><p>{services.length ? "Try a different search term or view all services." : "Please check back soon."}</p><Link className="button" href="/services">View all services</Link></div> : null}
       </section>
     </main>

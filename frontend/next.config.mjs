@@ -10,11 +10,6 @@ const nextConfig = {
         destination: "/user/:path*",
         permanent: true,
       },
-      {
-        source: "/admin/customers",
-        destination: "/admin/users",
-        permanent: true,
-      },
     ];
   },
   turbopack: {

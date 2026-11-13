@@ -1,10 +1,14 @@
 import Link from "next/link";
 
 const categories = [
-  { name: "Cleaning", icon: "🧹", description: "A fresh, comfortable home" },
-  { name: "Plumbing", icon: "🔧", description: "Repairs, leaks and fittings" },
-  { name: "Electrical", icon: "💡", description: "Safe help around the home" },
-  { name: "AC repair", icon: "❄️", description: "Servicing and maintenance" },
+  { name: "Cleaning", image: "/images/services/cleaning.jpg", description: "A fresh, comfortable home" },
+  { name: "Plumbing", image: "/images/services/plumbing.jpg", description: "Repairs, leaks and fittings" },
+  { name: "Electrical", image: "/images/services/electrical.jpg", description: "Safe help around the home" },
+  { name: "AC repair", image: "/images/services/ac-repair.jpg", description: "Servicing and maintenance" },
+  { name: "Painting", image: "/images/services/painting.png", description: "A fresh look for your home" },
+  { name: "Pest Control", image: "/images/services/pest%20control.jpg", description: "Keep unwanted pests away" },
+  { name: "Appliance Repair", image: "/images/services/applience%20repair.jpeg", description: "Get household appliances working" },
+  { name: "Moving & Shifting", image: "/images/services/moving%20%26%20shifting.png", description: "Make your move easier" },
 ];
 
 export default function HomePage() {
@@ -60,9 +64,7 @@ export default function HomePage() {
               href={`/services?category=${encodeURIComponent(category.name)}`}
               key={category.name}
             >
-              <span className="category-icon" aria-hidden="true">
-                {category.icon}
-              </span>
+              <span className="category-image" style={{ backgroundImage: `url("${category.image}")` }} />
               <strong>{category.name}</strong>
               <span>{category.description}</span>
             </Link>

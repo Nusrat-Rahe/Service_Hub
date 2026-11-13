@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity, ArrowRight, ArrowUpRight, CalendarCheck2,
-  CheckCircle2, CircleDollarSign, Clock3, Download, Ellipsis, Star,
+  CheckCircle2, Clock3, Download, Ellipsis, Star,
   UsersRound, Wrench,
 } from "lucide-react";
 import {
@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import { apiRequest, formatApiDate, getAdminOverview, getAdminReport, getApiId, getApiNumber, getApiString, type AdminOverview, type AdminReport } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
+import TakaSign from "@/components/shared/TakaSign";
 
 function BookingStatus({ status }: { status: string }) {
   return <span className={`admin-status status-${status.toLowerCase()}`}><i />{status}</span>;
@@ -62,7 +63,7 @@ export default function DashboardOverview() {
     { label: "Total bookings", value: overview?.bookings ?? 0, icon: CalendarCheck2, tone: "violet" },
     { label: "Pending bookings", value: overview?.pendingBookings ?? 0, icon: Clock3, tone: "amber" },
     { label: "Completed bookings", value: overview?.completedBookings ?? 0, icon: CheckCircle2, tone: "mint" },
-    { label: "Total revenue", value: formatMoney(overview?.revenue ?? 0), icon: CircleDollarSign, tone: "blue" },
+    { label: "Total revenue", value: formatMoney(overview?.revenue ?? 0), icon: TakaSign, tone: "blue" },
     { label: "Average rating", value: (overview?.averageRating ?? 0).toFixed(1), icon: Star, tone: "amber" },
   ];
 
