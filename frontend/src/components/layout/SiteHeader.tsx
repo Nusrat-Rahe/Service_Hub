@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { House, LayoutDashboard, LogOut, UserRound } from "lucide-react";
+import { House, LayoutDashboard, LogOut, Menu, UserRound } from "lucide-react";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -11,6 +11,7 @@ import { logoutUser, type AuthUser } from "@/lib/auth";
 export default function SiteHeader() {
   const router = useRouter();
   const accountMenuRef = useRef<HTMLDetailsElement>(null);
+  const mobileMenuRef = useRef<HTMLDetailsElement>(null);
   const [authModal, setAuthModal] = useState<AuthModalType | null>(null);
   const { user, setUser, isLoadingUser } = useAuth();
 
@@ -128,6 +129,95 @@ export default function SiteHeader() {
                 </>
               ))}
           </div>
+
+          <details className="mobile-menu" ref={mobileMenuRef}>
+            <summary aria-label="Open navigation menu" className="mobile-menu-button">
+              <Menu aria-hidden="true" size={22} strokeWidth={2} />
+            </summary>
+            <div className="mobile-menu-popover">
+              <nav aria-label="Mobile navigation" className="mobile-menu-links">
+                <Link
+                  href="/"
+                  onClick={() => mobileMenuRef.current?.removeAttribute("open")}
+                >
+                  Home
+                </Link>
+                <Link
+                  href="/services"
+                  onClick={() => mobileMenuRef.current?.removeAttribute("open")}
+                >
+                  Services
+                </Link>
+                {user?.role === "user" && (
+                  <Link
+                    href="/user/bookings"
+                    onClick={() => mobileMenuRef.current?.removeAttribute("open")}
+                  >
+                    My Bookings
+                  </Link>
+                )}
+                <Link
+                  href="/#contact"
+                  onClick={() => mobileMenuRef.current?.removeAttribute("open")}
+                >
+                  Contact
+                </Link>
+              </nav>
+
+              {!isLoadingUser &&
+                (user ? (
+                  <div className="mobile-menu-account">
+                    <Link
+                      href="/user/dashboard"
+                      onClick={() => mobileMenuRef.current?.removeAttribute("open")}
+                    >
+                      <LayoutDashboard aria-hidden="true" size={18} />
+                      <span>My Dashboard</span>
+                    </Link>
+                    <Link
+                      href="/user/profile"
+                      onClick={() => mobileMenuRef.current?.removeAttribute("open")}
+                    >
+                      <UserRound aria-hidden="true" size={18} />
+                      <span>Profile</span>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        mobileMenuRef.current?.removeAttribute("open");
+                        handleLogout();
+                      }}
+                      type="button"
+                    >
+                      <LogOut aria-hidden="true" size={18} />
+                      <span>Log out</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mobile-menu-auth">
+                    <button
+                      className="button button-secondary"
+                      onClick={() => {
+                        mobileMenuRef.current?.removeAttribute("open");
+                        setAuthModal("login");
+                      }}
+                      type="button"
+                    >
+                      Log in
+                    </button>
+                    <button
+                      className="button"
+                      onClick={() => {
+                        mobileMenuRef.current?.removeAttribute("open");
+                        setAuthModal("register");
+                      }}
+                      type="button"
+                    >
+                      Sign up
+                    </button>
+                  </div>
+                ))}
+            </div>
+          </details>
         </div>
       </header>
       <AuthModal

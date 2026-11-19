@@ -128,6 +128,10 @@ textarea {
   gap: 10px;
 }
 
+.mobile-menu {
+  display: none;
+}
+
 .account-menu {
   position: relative;
   line-height: 1;
@@ -331,7 +335,108 @@ textarea {
 
 @media (max-width: 800px) {
   .nav-links {
-    gap: 14px;
+    display: none;
+  }
+
+  .nav-actions {
+    display: none;
+  }
+
+  .header-inner.has-customer-nav {
+    flex-wrap: nowrap;
+  }
+
+  .mobile-menu {
+    position: relative;
+    display: block;
+  }
+
+  .mobile-menu-button {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: #ffffff;
+    color: var(--color-ink);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .mobile-menu-button::-webkit-details-marker {
+    display: none;
+  }
+
+  .mobile-menu-button:focus-visible {
+    outline: 3px solid rgb(8 127 91 / 20%);
+    outline-offset: 2px;
+  }
+
+  .mobile-menu-popover {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 10px);
+    right: 0;
+    width: min(300px, calc(100vw - 28px));
+    padding: 8px;
+    border: 1px solid #e4ece7;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 14px 38px rgb(20 43 34 / 16%);
+  }
+
+  .mobile-menu-links,
+  .mobile-menu-account {
+    display: grid;
+  }
+
+  .mobile-menu-links a,
+  .mobile-menu-account a,
+  .mobile-menu-account button {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #33443b;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .mobile-menu-links a:hover,
+  .mobile-menu-account a:hover,
+  .mobile-menu-account button:hover {
+    background: #f1f7f3;
+    color: var(--color-primary);
+  }
+
+  .mobile-menu-account {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .mobile-menu-account button {
+    width: 100%;
+  }
+
+  .mobile-menu-auth {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .mobile-menu-auth .button {
+    width: 100%;
   }
 }
 
@@ -343,10 +448,6 @@ textarea {
   .header-inner {
     min-height: 66px;
     gap: 10px;
-  }
-
-  .header-inner.has-customer-nav {
-    flex-wrap: wrap;
   }
 
   .brand {
@@ -364,24 +465,110 @@ textarea {
   }
 
   .nav-links.customer-nav-links {
-    width: 100%;
-    display: flex;
-    order: 3;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 9px 0;
-    border-top: 1px solid var(--color-border);
-    font-size: 11px;
+    display: none;
   }
 
   .nav-actions {
-    gap: 7px;
+    display: none;
   }
 
   .nav-actions .button {
     min-height: 38px;
     padding-inline: 11px;
     font-size: 12px;
+  }
+
+  .mobile-menu {
+    position: relative;
+    display: block;
+  }
+
+  .mobile-menu-button {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: #ffffff;
+    color: var(--color-ink);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .mobile-menu-button::-webkit-details-marker {
+    display: none;
+  }
+
+  .mobile-menu-button:focus-visible {
+    outline: 3px solid rgb(8 127 91 / 20%);
+    outline-offset: 2px;
+  }
+
+  .mobile-menu-popover {
+    position: absolute;
+    z-index: 30;
+    top: calc(100% + 10px);
+    right: 0;
+    width: min(300px, calc(100vw - 28px));
+    padding: 8px;
+    border: 1px solid #e4ece7;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 14px 38px rgb(20 43 34 / 16%);
+  }
+
+  .mobile-menu-links,
+  .mobile-menu-account {
+    display: grid;
+  }
+
+  .mobile-menu-links a,
+  .mobile-menu-account a,
+  .mobile-menu-account button {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #33443b;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .mobile-menu-links a:hover,
+  .mobile-menu-account a:hover,
+  .mobile-menu-account button:hover {
+    background: #f1f7f3;
+    color: var(--color-primary);
+  }
+
+  .mobile-menu-account {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .mobile-menu-account button {
+    width: 100%;
+  }
+
+  .mobile-menu-auth {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .mobile-menu-auth .button {
+    width: 100%;
   }
 
   .account-avatar {
