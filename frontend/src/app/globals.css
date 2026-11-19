@@ -345,6 +345,10 @@ textarea {
     gap: 10px;
   }
 
+  .header-inner.has-customer-nav {
+    flex-wrap: wrap;
+  }
+
   .brand {
     gap: 7px;
     font-size: 19px;
@@ -357,6 +361,17 @@ textarea {
 
   .nav-links {
     display: none;
+  }
+
+  .nav-links.customer-nav-links {
+    width: 100%;
+    display: flex;
+    order: 3;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 9px 0;
+    border-top: 1px solid var(--color-border);
+    font-size: 11px;
   }
 
   .nav-actions {

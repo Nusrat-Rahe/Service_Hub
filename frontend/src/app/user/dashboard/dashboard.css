@@ -9,6 +9,7 @@
   grid-template-columns: 250px minmax(0, 1fr);
   background: #f6f8f7;
   color: var(--hub-ink);
+  transition: grid-template-columns 180ms ease;
 }
 
 .customer-sidebar {
@@ -64,6 +65,20 @@
   color: rgb(255 255 255 / 80%);
 }
 
+.customer-sidebar-collapse {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #dfeae3;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #547866;
+  box-shadow: 0 2px 8px rgb(23 58 41 / 9%);
+  cursor: pointer;
+}
+
 .customer-sidebar-label {
   margin: 43px 11px 12px;
   color: rgb(255 255 255 / 43%);
@@ -78,6 +93,7 @@
 }
 
 .customer-nav-link {
+  position: relative;
   min-height: 45px;
   display: flex;
   align-items: center;
@@ -160,6 +176,7 @@
 }
 
 .customer-sidebar-logout {
+  position: relative;
   width: 100%;
   min-height: 40px;
   display: flex;
@@ -701,7 +718,7 @@
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 820px) {
   .customer-dashboard {
     min-height: 100svh;
     grid-template-columns: minmax(0, 1fr);
@@ -725,6 +742,10 @@
 
   .customer-sidebar-close {
     display: grid;
+  }
+
+  .customer-sidebar-collapse {
+    display: none;
   }
 
   .customer-sidebar-label {
@@ -907,5 +928,67 @@
   .customer-book-service-button,
   .customer-category-card {
     transition: none;
+  }
+}
+
+@media (min-width: 821px) {
+  .customer-dashboard.is-collapsed {
+    grid-template-columns: 76px minmax(0, 1fr);
+  }
+
+  .customer-dashboard.is-collapsed .customer-sidebar {
+    padding-inline: 10px;
+  }
+
+  .customer-dashboard.is-collapsed .customer-sidebar-brand-row {
+    justify-content: center;
+  }
+
+  .customer-dashboard.is-collapsed .customer-sidebar-brand-row > .customer-brand > span:last-child,
+  .customer-dashboard.is-collapsed .customer-sidebar-label,
+  .customer-dashboard.is-collapsed .customer-nav-link > span,
+  .customer-dashboard.is-collapsed .customer-support-card,
+  .customer-dashboard.is-collapsed .customer-sidebar-logout > span {
+    display: none;
+  }
+
+  .customer-dashboard.is-collapsed .customer-sidebar-collapse {
+    position: absolute;
+    z-index: 1;
+    top: 35px;
+    right: -12px;
+    transform: rotate(180deg);
+  }
+
+  .customer-dashboard.is-collapsed .customer-nav-link,
+  .customer-dashboard.is-collapsed .customer-sidebar-logout {
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .customer-dashboard.is-collapsed .customer-nav-link.active {
+    box-shadow: inset 3px 0 #9de0bd;
+  }
+
+  .customer-dashboard.is-collapsed .customer-nav-link[title]:hover::after,
+  .customer-dashboard.is-collapsed .customer-sidebar-logout[title]:hover::after {
+    position: absolute;
+    z-index: 50;
+    top: 50%;
+    left: 57px;
+    padding: 7px 9px;
+    transform: translateY(-50%);
+    border-radius: 6px;
+    background: #ffffff;
+    color: #244b39;
+    content: attr(title);
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 3px 10px rgb(23 58 41 / 13%);
+  }
+
+  .customer-dashboard.is-collapsed .customer-sidebar-logout[title]:hover::after {
+    left: 57px;
   }
 }

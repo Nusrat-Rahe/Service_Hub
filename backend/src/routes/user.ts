@@ -5,6 +5,7 @@ import { requireAuth } from "../middleware/requireAuth";
 import { Booking } from "../models/Booking";
 import { AdminBookingNotification } from "../models/AdminBookingNotification";
 import { Notification } from "../models/Notification";
+import { Payment } from "../models/Payment";
 import { Review } from "../models/Review";
 import { Service } from "../models/Service";
 import { User } from "../models/User";
@@ -16,6 +17,9 @@ router.use(requireAuth);
 function isText(value: unknown, maxLength: number): value is string {
   return typeof value === "string" && value.trim().length > 0 && value.trim().length <= maxLength;
 }
+
+const paymentMethods = ["bkash_demo", "card_demo", "cod"] as const;
+const paymentStatuses = ["Pending", "Paid", "Failed", "Refunded"] as const;
 
 function getDhakaDateKey(date: Date): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -186,14 +190,163 @@ router.get("/bookings/:id", async (req, res, next) => {
   }
 });
 
+router.get("/bookings/:id/payment", async (req, res, next) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(400).json({ message: "Invalid booking ID." });
+    return;
+  }
+  try {
+    const booking = await Booking.findOne({ _id: req.params.id, customerId: req.authUserId })
+      .select("_id")
+      .lean();
+    if (!booking) {
+      res.status(404).json({ message: "Booking not found." });
+      return;
+    }
+    const payment = await Payment.findOne({
+      bookingId: booking._id,
+      customerId: req.authUserId,
+    }).lean();
+    res.json({ payment });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/bookings/:id/payment", async (req, res, next) => {
+  const { paymentMethod } = req.body as Record<string, unknown>;
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(400).json({ message: "Invalid booking ID." });
+    return;
+  }
+  if (!paymentMethods.includes(paymentMethod as (typeof paymentMethods)[number])) {
+    res.status(400).json({ message: "Choose bKash Demo, Card Demo, or Cash on Delivery." });
+    return;
+  }
+
+  const session = await mongoose.startSession();
+  try {
+    let payment: InstanceType<typeof Payment> | null = null;
+    await session.withTransaction(async () => {
+      const booking = await Booking.findOne({
+        _id: req.params.id,
+        customerId: req.authUserId,
+        status: { $ne: "Cancelled" },
+        paymentStatus: "Pending",
+      }).session(session);
+      if (!booking) {
+        const existing = await Payment.findOne({
+          bookingId: req.params.id,
+          customerId: req.authUserId,
+        }).session(session);
+        if (existing) {
+          throw new PaymentConflict("A payment has already been created for this booking.");
+        }
+        throw new PaymentConflict("This booking is unavailable for payment.");
+      }
+
+      const isCod = paymentMethod === "cod";
+      payment = new Payment({
+        transactionId: `SH-PAY-${randomUUID().replaceAll("-", "").toUpperCase()}`,
+        bookingId: booking._id,
+        bookingCode: booking.bookingId,
+        customerId: booking.customerId,
+        customerName: booking.customerName,
+        customerEmail: booking.customerEmail,
+        serviceName: booking.serviceName,
+        paymentMethod,
+        date: new Date(),
+        amount: booking.price,
+        status: isCod ? "Pending" : "Paid",
+      });
+      await payment.save({ session });
+
+      const updatedBooking = await Booking.updateOne(
+        { _id: booking._id, customerId: req.authUserId, paymentStatus: "Pending" },
+        { $set: { paymentStatus: isCod ? "Pending" : "Paid" } },
+        { session },
+      );
+      if (updatedBooking.matchedCount !== 1) {
+        throw new PaymentConflict("The booking payment status changed. Please refresh and try again.");
+      }
+    });
+
+    res.status(201).json({ payment });
+  } catch (error) {
+    if (error instanceof PaymentConflict) {
+      res.status(409).json({ message: error.message });
+      return;
+    }
+    if (error instanceof mongoose.mongo.MongoServerError && error.code === 11000) {
+      res.status(409).json({ message: "A payment has already been created for this booking." });
+      return;
+    }
+    next(error);
+  } finally {
+    await session.endSession();
+  }
+});
+
+router.get("/payments", async (req, res, next) => {
+  const status = req.query.status;
+  const paymentMethod = req.query.method;
+  if (
+    (status !== undefined && (typeof status !== "string" || !paymentStatuses.includes(status as (typeof paymentStatuses)[number]))) ||
+    (paymentMethod !== undefined && (typeof paymentMethod !== "string" || !paymentMethods.includes(paymentMethod as (typeof paymentMethods)[number])))
+  ) {
+    res.status(400).json({ message: "Invalid payment filter." });
+    return;
+  }
+  try {
+    const paymentQuery = Payment.find().where("customerId", req.authUserId);
+    if (typeof status === "string") paymentQuery.where("status", status);
+    if (typeof paymentMethod === "string") paymentQuery.where("paymentMethod", paymentMethod);
+    const payments = await paymentQuery.sort({ date: -1 }).lean();
+    res.json({ payments });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/payments/:id", async (req, res, next) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(400).json({ message: "Invalid payment ID." });
+    return;
+  }
+  try {
+    const payment = await Payment.findOne({
+      _id: req.params.id,
+      customerId: req.authUserId,
+    }).lean();
+    if (!payment) {
+      res.status(404).json({ message: "Payment not found." });
+      return;
+    }
+    const booking = await Booking.findOne({
+      _id: payment.bookingId,
+      customerId: req.authUserId,
+    })
+      .select("bookingId date address notes status")
+      .lean();
+    res.json({ payment, booking });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.patch("/bookings/:id/cancel", async (req, res, next) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     res.status(400).json({ message: "Invalid booking ID." });
     return;
   }
   try {
+    const existingPayment = await Payment.exists({ bookingId: req.params.id });
+    if (existingPayment) {
+      res.status(409).json({ message: "A booking with a payment record cannot be cancelled online. Please contact ServiceHub support." });
+      return;
+    }
     const booking = await Booking.findOneAndUpdate(
-      { _id: req.params.id, customerId: req.authUserId, status: "Pending" },
+      { _id: req.params.id, customerId: req.authUserId, status: "Pending", paymentStatus: "Pending" },
       { status: "Cancelled" },
       { new: true, runValidators: true },
     );
@@ -206,6 +359,8 @@ router.patch("/bookings/:id/cancel", async (req, res, next) => {
     next(error);
   }
 });
+
+class PaymentConflict extends Error {}
 
 router.post("/bookings/:id/reviews", async (req, res, next) => {
   const { rating, comment } = req.body as Record<string, unknown>;

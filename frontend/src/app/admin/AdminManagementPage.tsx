@@ -214,7 +214,7 @@ export default function AdminManagementPage({ section }: Props) {
         {isLoading && <div className="admin-table-empty">Loading {details.title.toLowerCase()}…</div>}
         {!isLoading && notice && items.length === 0 && <div className="admin-table-empty">{notice}</div>}
         {!isLoading && filteredItems.length === 0 && items.length > 0 && <div className="admin-table-empty">No matching records. Try changing your search or filters.</div>}
-        {!isLoading && items.length === 0 && !notice && <div className="admin-table-empty">{section === "payments" ? "No payment records yet. Online payments are not recorded until a payment provider is configured." : `No ${details.title.toLowerCase()} found.`}</div>}
+        {!isLoading && items.length === 0 && !notice && <div className="admin-table-empty">{section === "payments" ? "No payment records yet. Customer payment choices will appear here." : `No ${details.title.toLowerCase()} found.`}</div>}
         <div className="admin-table-footer"><span>Showing <strong>{filteredItems.length}</strong> of <strong>{items.length}</strong> records</span><div><button disabled type="button">Previous</button><button className="is-current" type="button">1</button><button disabled type="button">Next</button></div></div>
       </div>
       {notice && <p className="admin-notice" role="status">{notice}</p>}

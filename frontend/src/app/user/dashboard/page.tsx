@@ -5,7 +5,9 @@ import {
   ArrowRight,
   Bell,
   CalendarDays,
+  CreditCard,
   ChevronRight,
+  ChevronLeft,
   Hammer,
   Heart,
   Home,
@@ -95,6 +97,7 @@ const navigation: {
   { name: "Dashboard", href: "/user/dashboard", icon: LayoutDashboard },
   { name: "Browse Services", href: "/services", icon: Search },
   { name: "My Bookings", href: "/user/bookings", icon: CalendarDays },
+  { name: "Payment History", href: "/user/payments", icon: CreditCard },
   { name: "Notifications", href: "/user/notifications", icon: Bell },
   { name: "Profile", href: "/user/profile", icon: UserRound },
 ];
@@ -110,11 +113,15 @@ function getInitials(name: string) {
 
 function Sidebar({
   isOpen,
+  isCollapsed,
   onClose,
+  onToggleCollapse,
   onLogout,
 }: {
   isOpen: boolean;
+  isCollapsed: boolean;
   onClose: () => void;
+  onToggleCollapse: () => void;
   onLogout: () => void;
 }) {
   const pathname = usePathname();
@@ -138,6 +145,7 @@ function Sidebar({
             aria-label="ServiceHub home"
             className="customer-brand"
             href="/"
+            title={isCollapsed ? "ServiceHub home" : undefined}
             onClick={onClose}
           >
             <span className="customer-brand-icon">
@@ -155,6 +163,15 @@ function Sidebar({
           >
             <X aria-hidden="true" size={19} />
           </button>
+          <button
+            aria-expanded={!isCollapsed}
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="customer-sidebar-collapse"
+            onClick={onToggleCollapse}
+            type="button"
+          >
+            <ChevronLeft aria-hidden="true" size={17} />
+          </button>
         </div>
 
         <p className="customer-sidebar-label">MENU</p>
@@ -169,6 +186,7 @@ function Sidebar({
                 className={`customer-nav-link${active ? " active" : ""}`}
                 href={href}
                 key={href}
+                title={isCollapsed ? name : undefined}
                 onClick={onClose}
               >
                 <Icon aria-hidden="true" size={19} strokeWidth={1.8} />
@@ -192,6 +210,7 @@ function Sidebar({
           <button
             className="customer-sidebar-logout"
             onClick={onLogout}
+            title={isCollapsed ? "Sign out" : undefined}
             type="button"
           >
             <LogOut aria-hidden="true" size={18} />
@@ -303,6 +322,7 @@ export default function UserDashboardPage() {
   const { user, setUser } = useAuth();
   const [search, setSearch] = useState("");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [serviceRecords, setServiceRecords] = useState<ServiceRecord[]>([]);
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [dashboardError, setDashboardError] = useState("");
@@ -349,10 +369,12 @@ export default function UserDashboardPage() {
   }
 
   return (
-    <div className="customer-dashboard">
+    <div className={`customer-dashboard${sidebarCollapsed ? " is-collapsed" : ""}`}>
       <Sidebar
+        isCollapsed={sidebarCollapsed}
         isOpen={mobileNavOpen}
         onClose={() => setMobileNavOpen(false)}
+        onToggleCollapse={() => setSidebarCollapsed((collapsed) => !collapsed)}
         onLogout={handleLogout}
       />
       <main className="customer-dashboard-main">

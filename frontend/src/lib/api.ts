@@ -248,6 +248,96 @@ export type BookingRecord = {
   paymentStatus: "Pending" | "Paid" | "Refunded";
 };
 
+export type PaymentMethod = "bkash_demo" | "card_demo" | "cod";
+export type PaymentStatus = "Paid" | "Pending" | "Failed" | "Refunded";
+
+export type PaymentRecord = {
+  _id: string;
+  transactionId: string;
+  bookingId: string;
+  bookingCode?: string;
+  customerId: string;
+  customerName: string;
+  customerEmail?: string;
+  serviceName: string;
+  paymentMethod?: PaymentMethod;
+  date: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  bookingStatus?: BookingRecord["status"] | "Unknown";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PaymentBookingDetails = {
+  bookingId: string;
+  date: string;
+  address: string;
+  notes: string;
+  status: BookingRecord["status"];
+};
+
+export function getMyPayments(filters: { status?: string; method?: string } = {}) {
+  const search = new URLSearchParams();
+  if (filters.status) search.set("status", filters.status);
+  if (filters.method) search.set("method", filters.method);
+  const query = search.size ? `?${search.toString()}` : "";
+  return apiRequest<{ payments: PaymentRecord[] }>(`/api/user/payments${query}`);
+}
+
+export function getMyPayment(id: string) {
+  return apiRequest<{ payment: PaymentRecord; booking: PaymentBookingDetails | null }>(
+    `/api/user/payments/${encodeURIComponent(id)}`,
+  );
+}
+
+export function getMyBookingPayment(id: string) {
+  return apiRequest<{ payment: PaymentRecord | null }>(
+    `/api/user/bookings/${encodeURIComponent(id)}/payment`,
+  );
+}
+
+export function createBookingPayment(id: string, paymentMethod: PaymentMethod) {
+  return apiRequest<{ payment: PaymentRecord }>(
+    `/api/user/bookings/${encodeURIComponent(id)}/payment`,
+    { method: "POST", body: JSON.stringify({ paymentMethod }) },
+  );
+}
+
+export type AdminPaymentSummary = {
+  total: number;
+  paid: number;
+  pending: number;
+  failed: number;
+};
+
+export function getAdminPayments(filters: { q?: string; status?: string; method?: string } = {}) {
+  const search = new URLSearchParams();
+  if (filters.q) search.set("q", filters.q);
+  if (filters.status) search.set("status", filters.status);
+  if (filters.method) search.set("method", filters.method);
+  const query = search.size ? `?${search.toString()}` : "";
+  return apiRequest<{ payments: PaymentRecord[]; summary: AdminPaymentSummary }>(
+    `/api/admin/payments${query}`,
+  );
+}
+
+export function getAdminPayment(id: string) {
+  return apiRequest<{
+    payment: PaymentRecord;
+    booking: PaymentBookingDetails | null;
+    customer: { fullName: string; email: string } | null;
+  }>(`/api/admin/payments/${encodeURIComponent(id)}`);
+}
+
+export function confirmCodPayment(id: string) {
+  return apiRequest<{ payment: PaymentRecord }>(
+    `/api/admin/payments/${encodeURIComponent(id)}/status`,
+    { method: "PATCH", body: JSON.stringify({ status: "Paid" }) },
+  );
+}
+
 export type AdminBookingNotification = {
   _id: string;
   bookingRef: string;

@@ -1,5 +1,5 @@
-import AdminManagementPage from "../AdminManagementPage";
+import AdminPaymentsManagementPage from "../AdminPaymentsManagementPage";
 
 export default function AdminPaymentsPage() {
-  return <AdminManagementPage section="payments" />;
+  return <AdminPaymentsManagementPage />;
 }

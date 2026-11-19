@@ -55,7 +55,7 @@ function BookingRequestContent() {
         address,
         notes,
       });
-      router.push(`/user/bookings/${booking._id}`);
+      router.push(`/user/bookings/${booking._id}/payment`);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Could not create your booking.");
     } finally {
@@ -97,8 +97,8 @@ function BookingRequestContent() {
               <label htmlFor="booking-notes">Anything else we should know? <span>(optional)</span></label>
               <textarea id="booking-notes" maxLength={1000} onChange={(event) => setNotes(event.target.value)} rows={4} value={notes} />
               <div className="service-booking-price"><span>Estimated service price</span><strong>{service ? formatMoney(service.price) : "Loading…"}</strong></div>
-              <p className="service-payment-note">This request does not charge a payment method. Payment processing will be available once a payment provider is configured.</p>
-              <button className="button" disabled={!service || isSubmitting} type="submit">{isSubmitting ? "Sending request…" : "Send booking request"}</button>
+              <p className="service-payment-note">Choose an online payment method or cash on delivery after your booking is created. No payment credentials are requested or stored.</p>
+              <button className="button" disabled={!service || isSubmitting} type="submit">{isSubmitting ? "Creating booking…" : "Continue to payment"}</button>
             </form>
           )}
         </section>

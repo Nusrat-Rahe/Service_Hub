@@ -33,7 +33,7 @@ export default function SiteHeader() {
   return (
     <>
       <header className="site-header">
-        <div className="container header-inner">
+        <div className={`container header-inner${user?.role === "user" ? " has-customer-nav" : ""}`}>
           <Link className="brand" href="/" aria-label="ServiceHub home">
             <span className="brand-mark" aria-hidden="true">
               <House size={21} strokeWidth={2.2} />
@@ -43,9 +43,10 @@ export default function SiteHeader() {
             </span>
           </Link>
 
-          <nav className="nav-links" aria-label="Main navigation">
+          <nav className={`nav-links${user?.role === "user" ? " customer-nav-links" : ""}`} aria-label="Main navigation">
             <Link href="/">Home</Link>
             <Link href="/services">Services</Link>
+            {user?.role === "user" && <Link href="/user/bookings">My Bookings</Link>}
             <Link href="/#contact">Contact</Link>
           </nav>
 

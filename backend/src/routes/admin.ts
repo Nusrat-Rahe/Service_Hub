@@ -14,6 +14,9 @@ import { requireAdmin } from "../middleware/requireAdmin";
 const router = Router();
 router.use(requireAdmin);
 
+const paymentMethods = ["bkash_demo", "card_demo", "cod"] as const;
+const paymentStatuses = ["Pending", "Paid", "Failed", "Refunded"] as const;
+
 router.get("/booking-notifications", async (req, res, next) => {
   try {
     const [notifications, unreadCount] = await Promise.all([
@@ -426,14 +429,137 @@ router.patch("/bookings/:id/status", async (req, res, next) => {
   }
 });
 
-router.get("/payments", async (_req, res, next) => {
+router.get("/payments", async (req, res, next) => {
+  const { status, method, q } = req.query;
+  if (
+    (status !== undefined && (typeof status !== "string" || !paymentStatuses.includes(status as (typeof paymentStatuses)[number]))) ||
+    (method !== undefined && (typeof method !== "string" || !paymentMethods.includes(method as (typeof paymentMethods)[number]))) ||
+    (q !== undefined && (typeof q !== "string" || q.length > 100))
+  ) {
+    res.status(400).json({ message: "Invalid payment search or filter." });
+    return;
+  }
+  const escapedQuery = typeof q === "string" && q.trim()
+    ? q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    : null;
+  const paymentQuery = Payment.find();
+  if (typeof status === "string") paymentQuery.where("status", status);
+  if (typeof method === "string") paymentQuery.where("paymentMethod", method);
+  if (escapedQuery) {
+    const expression = new RegExp(escapedQuery, "i");
+    paymentQuery.or([{ transactionId: expression }, { bookingCode: expression }]);
+  }
   try {
-    const payments = await Payment.find().sort({ date: -1 }).lean();
-    res.json({ payments });
+    const [payments, counts] = await Promise.all([
+      paymentQuery.sort({ date: -1 }).lean(),
+      Payment.aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+      ]),
+    ]);
+    const bookingStatuses = await Booking.find({
+      _id: { $in: payments.map((payment) => payment.bookingId) },
+    })
+      .select("_id status")
+      .lean();
+    const bookingStatusById = new Map(
+      bookingStatuses.map((booking) => [booking._id.toString(), booking.status]),
+    );
+    const byStatus = Object.fromEntries(
+      counts.map((item: { _id: string; count: number }) => [item._id, item.count]),
+    ) as Record<string, number>;
+    res.json({
+      payments: payments.map((payment) => ({
+        ...payment,
+        bookingStatus: bookingStatusById.get(payment.bookingId.toString()) ?? "Unknown",
+      })),
+      summary: {
+        total: counts.reduce((total: number, item: { count: number }) => total + item.count, 0),
+        paid: byStatus.Paid ?? 0,
+        pending: byStatus.Pending ?? 0,
+        failed: byStatus.Failed ?? 0,
+      },
+    });
   } catch (error) {
     routeError(next, error);
   }
 });
+
+router.get("/payments/:id", async (req, res, next) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(400).json({ message: "Invalid payment ID." });
+    return;
+  }
+  try {
+    const payment = await Payment.findById(req.params.id).lean();
+    if (!payment) {
+      res.status(404).json({ message: "Payment not found." });
+      return;
+    }
+    const [booking, customer] = await Promise.all([
+      Booking.findById(payment.bookingId)
+        .select("bookingId date address notes status")
+        .lean(),
+      User.findById(payment.customerId).select("fullName email").lean(),
+    ]);
+    res.json({ payment, booking, customer });
+  } catch (error) {
+    routeError(next, error);
+  }
+});
+
+router.patch("/payments/:id/status", async (req, res, next) => {
+  const { status } = req.body as Record<string, unknown>;
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    res.status(400).json({ message: "Invalid payment ID." });
+    return;
+  }
+  if (status !== "Paid") {
+    res.status(400).json({ message: "Only pending COD payments can be confirmed as paid." });
+    return;
+  }
+
+  const session = await mongoose.startSession();
+  try {
+    let updatedPayment: InstanceType<typeof Payment> | null = null;
+    await session.withTransaction(async () => {
+      const payment = await Payment.findOne({
+        _id: req.params.id,
+        paymentMethod: "cod",
+        status: "Pending",
+      }).session(session);
+      if (!payment) {
+        throw new PaymentStatusConflict("Only pending COD payments can be confirmed.");
+      }
+      const updatedBooking = await Booking.updateOne(
+        { _id: payment.bookingId, status: "Completed", paymentStatus: "Pending" },
+        { $set: { paymentStatus: "Paid" } },
+        { session },
+      );
+      if (updatedBooking.matchedCount !== 1) {
+        throw new PaymentStatusConflict("The related booking must be completed before COD payment can be confirmed.");
+      }
+      updatedPayment = await Payment.findOneAndUpdate(
+        { _id: payment._id, paymentMethod: "cod", status: "Pending" },
+        { $set: { status: "Paid", date: new Date() } },
+        { new: true, runValidators: true, session },
+      );
+      if (!updatedPayment) {
+        throw new PaymentStatusConflict("This payment has already been updated.");
+      }
+    });
+    res.json({ payment: updatedPayment });
+  } catch (error) {
+    if (error instanceof PaymentStatusConflict) {
+      res.status(409).json({ message: error.message });
+      return;
+    }
+    routeError(next, error);
+  } finally {
+    await session.endSession();
+  }
+});
+
+class PaymentStatusConflict extends Error {}
 
 router.get("/reviews", async (_req, res, next) => {
   try {
