@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { getServices, type ServiceRecord } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
+import { getServiceCategoryByName } from "@/lib/service-categories";
 
 const serviceImages: Record<string, string> = {
   cleaning: "/images/services/cleaning.jpg",
@@ -84,8 +85,9 @@ function ServiceDirectoryContent() {
           <div className="services-grid">{filteredServices.map((service) => {
             const serviceKey = service.name.toLocaleLowerCase();
             const image = serviceImages[serviceKey];
+            const serviceCategory = getServiceCategoryByName(service.name);
             return (
-              <Link className={`service-tile${image ? " has-image" : ""}`} href={`/services/${service._id}`} key={service._id}>
+              <Link className={`service-tile${image ? " has-image" : ""}`} href={serviceCategory ? `/services/${serviceCategory.slug}` : `/services/${service._id}`} key={service._id}>
                 {image ? (
                   <span className="service-tile-image" style={{ backgroundImage: `url("${image}")` }} />
                 ) : null}

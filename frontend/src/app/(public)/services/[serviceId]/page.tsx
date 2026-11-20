@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
+import ServiceCategoryPage from "@/components/services/ServiceCategoryPage";
 import { getService, type ServiceRecord } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
+import { serviceCategories } from "@/lib/service-categories";
 
 export default function ServiceDetailsPage() {
   return <Suspense fallback={<main className="service-detail-page"><div className="container">Loading service details…</div></main>}><ServiceDetailsContent /></Suspense>;
@@ -13,16 +15,20 @@ export default function ServiceDetailsPage() {
 
 function ServiceDetailsContent() {
   const params = useParams<{ serviceId: string }>();
+  const category = serviceCategories[params.serviceId];
   const [service, setService] = useState<ServiceRecord | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (category) return;
     let active = true;
     getService(params.serviceId)
       .then(({ service: record }) => { if (active) setService(record); })
       .catch((requestError: unknown) => { if (active) setError(requestError instanceof Error ? requestError.message : "Could not load this service."); });
     return () => { active = false; };
-  }, [params.serviceId]);
+  }, [category, params.serviceId]);
+
+  if (category) return <ServiceCategoryPage category={category} />;
 
   return (
     <main className="service-detail-page">

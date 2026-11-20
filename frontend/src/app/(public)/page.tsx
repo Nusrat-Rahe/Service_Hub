@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getServiceCategoryByName } from "@/lib/service-categories";
 
 const categories = [
   { name: "Cleaning", image: "/images/services/cleaning.jpg", description: "A fresh, comfortable home" },
@@ -58,17 +59,20 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="category-grid">
-          {categories.map((category) => (
-            <Link
-              className="category-card"
-              href={`/services?category=${encodeURIComponent(category.name)}`}
-              key={category.name}
-            >
-              <span className="category-image" style={{ backgroundImage: `url("${category.image}")` }} />
-              <strong>{category.name}</strong>
-              <span>{category.description}</span>
-            </Link>
-          ))}
+          {categories.map((category) => {
+            const serviceCategory = getServiceCategoryByName(category.name);
+            return (
+              <Link
+                className="category-card"
+                href={serviceCategory ? `/services/${serviceCategory.slug}` : `/services?category=${encodeURIComponent(category.name)}`}
+                key={category.name}
+              >
+                <span className="category-image" style={{ backgroundImage: `url("${category.image}")` }} />
+                <strong>{category.name}</strong>
+                <span>{category.description}</span>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
