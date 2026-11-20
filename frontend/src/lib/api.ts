@@ -415,3 +415,15 @@ export function updateMyProfile(fullName: string) {
     body: JSON.stringify({ fullName }),
   });
 }
+
+export function sendSupportMessage(input: {
+  fullName: string;
+  email: string;
+  subject: string;
+  message: string;
+}) {
+  return apiRequest<{ message: string }>("/api/support", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}

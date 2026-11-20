@@ -5,9 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Bell, CalendarDays, ChartNoAxesCombined, ChevronDown, ChevronLeft,
   ChevronRight, House, LayoutDashboard, LogOut, Menu,
-  MessageSquareText, Search, Settings2, ShieldCheck, Sparkles, Users, X,
+  MessageSquareText, Search, ShieldCheck, Sparkles, Users, X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import { useAuth } from "@/components/auth/AuthProvider";
 import TakaSign from "@/components/shared/TakaSign";
@@ -50,6 +50,54 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   const [notificationError, setNotificationError] = useState("");
   const [markingAllRead, setMarkingAllRead] = useState(false);
   const today = useDhakaToday();
+  const notificationWrapRef = useRef<HTMLDivElement>(null);
+  const profileWrapRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const normalizedSearch = search.trim().toLocaleLowerCase();
+  const matchingPrimaryLinks = primaryLinks.filter(({ label }) =>
+    label.toLocaleLowerCase().includes(normalizedSearch),
+  );
+  const matchingSecondaryLinks = secondaryLinks.filter(({ label }) =>
+    label.toLocaleLowerCase().includes(normalizedSearch),
+  );
+  const firstSearchMatch = [...matchingPrimaryLinks, ...matchingSecondaryLinks][0];
+
+  useEffect(() => {
+    setProfileOpen(false);
+    setNotificationOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    function handleOutsidePointer(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+
+      if (notificationWrapRef.current && !notificationWrapRef.current.contains(target)) {
+        setNotificationOpen(false);
+      }
+      if (profileWrapRef.current && !profileWrapRef.current.contains(target)) {
+        setProfileOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handleOutsidePointer);
+    return () => document.removeEventListener("pointerdown", handleOutsidePointer);
+  }, []);
+
+  useEffect(() => {
+    function handleSearchShortcut(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (event.key === "Escape" && document.activeElement === searchInputRef.current) {
+        setSearch("");
+        searchInputRef.current?.blur();
+      }
+    }
+
+    document.addEventListener("keydown", handleSearchShortcut);
+    return () => document.removeEventListener("keydown", handleSearchShortcut);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -143,7 +191,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           className={`admin-nav-link${active ? " is-active" : ""}`}
           href={href}
           key={href}
-          onClick={() => setMobileOpen(false)}
+          onClick={() => { setMobileOpen(false); setSearch(""); }}
           title={collapsed ? label : undefined}
         >
           <Icon aria-hidden="true" size={19} strokeWidth={1.8} />
@@ -165,13 +213,19 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
           </button>
         </Link>
         <div className="admin-sidebar-scroll">
-          <p className="admin-nav-caption">WORKSPACE</p>
-          <nav aria-label="Main navigation" className="admin-navigation">{renderLinks(primaryLinks)}</nav>
-          <p className="admin-nav-caption admin-nav-caption-spaced">MANAGE</p>
-          <nav aria-label="Management navigation" className="admin-navigation">{renderLinks(secondaryLinks)}</nav>
+          {matchingPrimaryLinks.length > 0 && <>
+            <p className="admin-nav-caption">WORKSPACE</p>
+            <nav aria-label="Main navigation" className="admin-navigation">{renderLinks(matchingPrimaryLinks)}</nav>
+          </>}
+          {matchingSecondaryLinks.length > 0 && <>
+            <p className="admin-nav-caption admin-nav-caption-spaced">MANAGE</p>
+            <nav aria-label="Management navigation" className="admin-navigation">{renderLinks(matchingSecondaryLinks)}</nav>
+          </>}
+          {normalizedSearch && matchingPrimaryLinks.length === 0 && matchingSecondaryLinks.length === 0 && (
+            <p className="admin-nav-caption" role="status">No matching sections</p>
+          )}
         </div>
         <div className="admin-sidebar-bottom">
-          <div className="admin-help-card"><span className="admin-help-icon"><Settings2 size={17} /></span><strong>Need a hand?</strong><small>Visit the help center</small><ChevronRight size={15} /></div>
           <button className="admin-nav-link admin-logout" onClick={handleLogout} type="button">
             <LogOut aria-hidden="true" size={19} /><span>Log out</span>
           </button>
@@ -185,11 +239,18 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       <main className="admin-main">
         <header className="admin-topbar">
           <button aria-label="Open navigation" className="admin-mobile-menu" onClick={() => setMobileOpen(true)} type="button"><Menu size={21} /></button>
-          <div className="admin-topbar-search"><Search aria-hidden="true" size={17} /><input aria-label="Search dashboard" onChange={(event) => setSearch(event.target.value)} placeholder="Search anything..." value={search} /><kbd>⌘ K</kbd></div>
+          <div className="admin-topbar-search"><Search aria-hidden="true" size={17} /><input aria-label="Search dashboard navigation" onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => {
+            if (event.key === "Enter" && firstSearchMatch) {
+              event.preventDefault();
+              setSearch("");
+              setMobileOpen(false);
+              router.push(firstSearchMatch.href);
+            }
+          }} placeholder="Search dashboard..." ref={searchInputRef} value={search} /><kbd>⌘ K</kbd></div>
           <div className="admin-topbar-actions">
             <time className="admin-topbar-date" dateTime={today}>{formatDhakaDate(today)}</time>
-            <div className="admin-notification-wrap">
-              <button aria-expanded={notificationOpen} aria-label={`Notifications${unreadCount ? ` (${unreadCount} unread)` : ""}`} className="admin-icon-button admin-notification-button" onClick={() => setNotificationOpen((open) => !open)} type="button">
+            <div className="admin-notification-wrap" ref={notificationWrapRef}>
+              <button aria-expanded={notificationOpen} aria-label={`Notifications${unreadCount ? ` (${unreadCount} unread)` : ""}`} className="admin-icon-button admin-notification-button" onClick={() => { setProfileOpen(false); setNotificationOpen((open) => !open); }} type="button">
                 <Bell size={19} />{unreadCount > 0 && <i>{unreadCount > 99 ? "99+" : unreadCount}</i>}
               </button>
               {notificationOpen && <section aria-label="Booking notifications" className="admin-notification-panel">
@@ -211,8 +272,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                 <Link className="admin-notification-footer" href="/admin/bookings" onClick={() => setNotificationOpen(false)}>View all bookings <ChevronRight size={14} /></Link>
               </section>}
             </div>
-            <div className="admin-profile-wrap">
-              <button aria-expanded={profileOpen} className="admin-profile-button" onClick={() => setProfileOpen(!profileOpen)} type="button">
+            <div className="admin-profile-wrap" ref={profileWrapRef}>
+              <button aria-expanded={profileOpen} className="admin-profile-button" onClick={() => { setNotificationOpen(false); setProfileOpen((open) => !open); }} type="button">
                 <span className="admin-avatar">{user?.fullName?.charAt(0).toUpperCase() ?? "A"}</span>
                 <span className="admin-profile-copy"><strong>{user?.fullName ?? "Admin"}</strong><small>Administrator</small></span><ChevronDown size={15} />
               </button>
@@ -221,7 +282,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             <button aria-label="Close mobile navigation" className="admin-mobile-close" onClick={() => setMobileOpen(false)} type="button"><X size={20} /></button>
           </div>
         </header>
-        <div className="admin-content" data-global-search={search}>{children}</div>
+        <div className="admin-content">{children}</div>
       </main>
     </div>
   );

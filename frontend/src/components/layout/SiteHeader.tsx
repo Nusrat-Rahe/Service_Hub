@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { House, LayoutDashboard, LogOut, Menu, UserRound } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
 import AuthModal, { type AuthModalType } from "@/components/auth/AuthModal";
@@ -14,6 +14,31 @@ export default function SiteHeader() {
   const mobileMenuRef = useRef<HTMLDetailsElement>(null);
   const [authModal, setAuthModal] = useState<AuthModalType | null>(null);
   const { user, setUser, isLoadingUser } = useAuth();
+
+  useEffect(() => {
+    function handleOutsidePointer(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+
+      if (accountMenuRef.current?.hasAttribute("open") && !accountMenuRef.current.contains(target)) {
+        accountMenuRef.current.removeAttribute("open");
+      }
+      if (mobileMenuRef.current?.hasAttribute("open") && !mobileMenuRef.current.contains(target)) {
+        mobileMenuRef.current.removeAttribute("open");
+      }
+    }
+    function handleNavigation() {
+      accountMenuRef.current?.removeAttribute("open");
+      mobileMenuRef.current?.removeAttribute("open");
+    }
+
+    document.addEventListener("pointerdown", handleOutsidePointer);
+    window.addEventListener("popstate", handleNavigation);
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsidePointer);
+      window.removeEventListener("popstate", handleNavigation);
+    };
+  }, []);
 
   function handleAuthSuccess(authenticatedUser: AuthUser) {
     setUser(authenticatedUser);

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getServiceCategoryByName } from "@/lib/service-categories";
+import HomeSearch from "@/components/layout/HomeSearch";
 
 const categories = [
   { name: "Cleaning", image: "/images/services/cleaning.jpg", description: "A fresh, comfortable home" },
@@ -27,19 +28,7 @@ export default function HomePage() {
             Browse cleaning, repairs and more, then book trusted professionals
             directly through ServiceHub.
           </p>
-          <form className="search-form" action="/services">
-            <label className="sr-only" htmlFor="service-search">
-              Search home services
-            </label>
-            <input
-              id="service-search"
-              name="q"
-              placeholder="What service do you need?"
-            />
-            <button className="button" type="submit">
-              Find a service
-            </button>
-          </form>
+          <HomeSearch />
           <div className="trust-points">
             <span>✓ Service details upfront</span>
             <span>✓ Convenient booking requests</span>

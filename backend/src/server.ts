@@ -10,6 +10,7 @@ import { Server } from "socket.io";
 import authRouter from "./routes/auth";
 import adminRouter from "./routes/admin";
 import servicesRouter from "./routes/services";
+import supportRouter from "./routes/support";
 import userRouter from "./routes/user";
 import { User } from "./models/User";
 import { configureSocketServer } from "./realtime";
@@ -73,6 +74,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/services", servicesRouter);
+app.use("/api/support", supportRouter);
 app.use("/api/user", userRouter);
 
 app.get("/", (req, res) => {

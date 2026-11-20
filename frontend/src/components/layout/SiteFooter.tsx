@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { House } from "lucide-react";
+import { House, Mail, MapPin, Phone } from "lucide-react";
 
 const footerSections = [
   {
@@ -7,7 +7,6 @@ const footerSections = [
     links: [
       { label: "Home", href: "/" },
       { label: "Services", href: "/services" },
-      { label: "Contact", href: "/#contact" },
     ],
   },
   {
@@ -51,6 +50,26 @@ export default function SiteFooter() {
               Trusted home services, made simple. We help make every home a
               little better.
             </p>
+            <address className="mt-5 grid max-w-xs gap-3 text-sm not-italic text-white/70">
+              <a
+                className="inline-flex items-center gap-2 rounded-sm transition-colors hover:text-[#9de3c6] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9de3c6]"
+                href="tel:+8801711211555"
+              >
+                <Phone aria-hidden="true" size={16} />
+                <span>01711211555</span>
+              </a>
+              <a
+                className="inline-flex items-center gap-2 rounded-sm transition-colors hover:text-[#9de3c6] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9de3c6]"
+                href="mailto:support@servicehub.com"
+              >
+                <Mail aria-hidden="true" size={16} />
+                <span>support@servicehub.com</span>
+              </a>
+              <span className="inline-flex items-start gap-2">
+                <MapPin aria-hidden="true" className="mt-0.5 shrink-0" size={16} />
+                <span>Sylhet, Bangladesh</span>
+              </span>
+            </address>
           </div>
 
           {footerSections.map((section) => {
