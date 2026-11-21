@@ -2,6 +2,7 @@ import Link from "next/link";
 import HomeSearch from "@/components/layout/HomeSearch";
 import HomeCategories from "@/components/home/HomeCategories";
 import { PopularServices, WhyChooseUs } from "@/components/home/HomeSections";
+import { ReviewTestimonials } from "@/components/reviews/ReviewTestimonials";
 
 export default function HomePage() {
   return (
@@ -65,6 +66,7 @@ export default function HomePage() {
       </section>
       <WhyChooseUs id="why-choose-us" />
       <PopularServices id="popular-services" />
+      <ReviewTestimonials />
     </>
   );
 }

@@ -8,7 +8,7 @@ const reviewSchema = new Schema(
     serviceName: { type: String, required: true, trim: true, maxlength: 100 },
     rating: { type: Number, required: true, min: 1, max: 5 },
     comment: { type: String, required: true, trim: true, maxlength: 2000 },
-    status: { type: String, enum: ["Pending", "Published", "Hidden"], default: "Pending" },
+    status: { type: String, enum: ["Pending", "Published", "Rejected", "Hidden"], default: "Pending" },
   },
   { timestamps: true },
 );

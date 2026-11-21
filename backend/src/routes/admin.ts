@@ -63,7 +63,7 @@ router.patch("/booking-notifications/:id/read", async (req, res, next) => {
     const notification = await AdminBookingNotification.findByIdAndUpdate(
       req.params.id,
       { $addToSet: { readBy: req.authUserId } },
-      { new: true },
+      { returnDocument: "after" },
     ).lean();
     if (!notification) {
       res.status(404).json({ message: "Booking notification not found." });
@@ -171,7 +171,7 @@ router.patch("/customers/:id/status", async (req, res, next) => {
     const customer = await User.findOneAndUpdate(
       { _id: req.params.id, role: "user" },
       { status },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     ).select("fullName email status createdAt");
     if (!customer) {
       res.status(404).json({ message: "Customer not found." });
@@ -217,7 +217,7 @@ router.patch("/admins/:id/status", async (req, res, next) => {
     const admin = await User.findOneAndUpdate(
       { _id: req.params.id, role: "admin" },
       { status },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     ).select("fullName email status createdAt");
     if (!admin) {
       res.status(404).json({ message: "Admin account not found." });
@@ -364,7 +364,7 @@ router.patch("/services/:id", async (req, res, next) => {
     update.status = status;
   }
   try {
-    const service = await Service.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
+    const service = await Service.findByIdAndUpdate(req.params.id, update, { returnDocument: "after", runValidators: true });
     if (!service) { res.status(404).json({ message: "Service not found." }); return; }
     const categoryRecord = await Category.findOne({ serviceId: service._id });
     if (categoryRecord) {
@@ -631,7 +631,7 @@ router.patch("/payments/:id/status", async (req, res, next) => {
       updatedPayment = await Payment.findOneAndUpdate(
         { _id: payment._id, paymentMethod: "cod", status: "Pending" },
         { $set: { status: "Paid", date: new Date() } },
-        { new: true, runValidators: true, session },
+        { returnDocument: "after", runValidators: true, session },
       );
       if (!updatedPayment) {
         throw new PaymentStatusConflict("This payment has already been updated.");
@@ -653,8 +653,20 @@ class PaymentStatusConflict extends Error {}
 
 router.get("/reviews", async (_req, res, next) => {
   try {
-    const reviews = await Review.find().sort({ createdAt: -1 }).lean();
-    res.json({ reviews });
+    const reviews = await Review.find()
+      .sort({ createdAt: -1 })
+      .populate<{ bookingId: { _id: mongoose.Types.ObjectId; bookingId: string } | null }>(
+        "bookingId",
+        "bookingId",
+      )
+      .lean();
+    res.json({
+      reviews: reviews.map((review) => ({
+        ...review,
+        bookingReference: review.bookingId?.bookingId ?? "—",
+        bookingId: review.bookingId?._id.toString() ?? "",
+      })),
+    });
   } catch (error) {
     routeError(next, error);
   }
@@ -663,12 +675,12 @@ router.get("/reviews", async (_req, res, next) => {
 router.patch("/reviews/:id/status", async (req, res, next) => {
   const { status } = req.body as Record<string, unknown>;
   if (!mongoose.isValidObjectId(req.params.id)) { res.status(400).json({ message: "Invalid review ID." }); return; }
-  if (!["Pending", "Published", "Hidden"].includes(String(status))) {
+  if (!["Pending", "Published", "Rejected", "Hidden"].includes(String(status))) {
     res.status(400).json({ message: "Invalid review status." });
     return;
   }
   try {
-    const review = await Review.findByIdAndUpdate(req.params.id, { status }, { new: true, runValidators: true });
+    const review = await Review.findByIdAndUpdate(req.params.id, { status }, { returnDocument: "after", runValidators: true });
     if (!review) { res.status(404).json({ message: "Review not found." }); return; }
     res.json({ review });
   } catch (error) {
@@ -744,7 +756,7 @@ router.patch("/notifications/:id/status", async (req, res, next) => {
     const notification = await Notification.findByIdAndUpdate(
       req.params.id,
       { status, sentAt: status === "Sent" ? new Date() : null },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     );
     if (!notification) {
       res.status(404).json({ message: "Notification not found." });

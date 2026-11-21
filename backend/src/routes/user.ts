@@ -70,7 +70,7 @@ router.patch("/profile", async (req, res, next) => {
     const user = await User.findByIdAndUpdate(
       req.authUserId,
       { fullName: fullName.trim() },
-      { new: true, runValidators: true },
+      { returnDocument: "after", runValidators: true },
     ).select("fullName email role status");
     if (!user) {
       res.status(404).json({ message: "Your account could not be found." });
@@ -103,6 +103,62 @@ router.get("/bookings", async (req, res, next) => {
       .sort({ createdAt: -1 })
       .lean();
     res.json({ bookings });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/reviews", async (req, res, next) => {
+  try {
+    const reviews = await Review.aggregate([
+      { $match: { customerId: new mongoose.Types.ObjectId(req.authUserId) } },
+      { $sort: { createdAt: -1 } },
+      {
+        $lookup: {
+          from: Booking.collection.name,
+          localField: "bookingId",
+          foreignField: "_id",
+          as: "booking",
+        },
+      },
+      { $unwind: { path: "$booking", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: Service.collection.name,
+          localField: "booking.serviceId",
+          foreignField: "_id",
+          as: "service",
+        },
+      },
+      { $unwind: { path: "$service", preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: User.collection.name,
+          localField: "customerId",
+          foreignField: "_id",
+          as: "customer",
+        },
+      },
+      { $unwind: { path: "$customer", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 1,
+          customerId: 1,
+          bookingId: { $ifNull: ["$booking._id", "$bookingId"] },
+          bookingReference: { $ifNull: ["$booking.bookingId", ""] },
+          customerName: { $ifNull: ["$customer.fullName", "$customerName"] },
+          customerProfileImage: { $ifNull: ["$customer.profileImage", ""] },
+          serviceId: { $ifNull: ["$service._id", ""] },
+          serviceImage: { $ifNull: ["$service.image", ""] },
+          serviceName: { $ifNull: ["$service.name", "$serviceName"] },
+          rating: 1,
+          comment: 1,
+          status: 1,
+          createdAt: 1,
+        },
+      },
+    ]);
+    res.json({ reviews });
   } catch (error) {
     next(error);
   }
@@ -163,7 +219,7 @@ router.post("/bookings", async (req, res, next) => {
           },
         },
         { $inc: { bookedCount: 1 } },
-        { new: true, session },
+        { returnDocument: "after", session },
       );
       if (!slot) throw new SlotReservationConflict("This time slot has just been booked. Choose another available time.");
 
@@ -454,7 +510,7 @@ router.patch("/bookings/:id/cancel", async (req, res, next) => {
       booking = await Booking.findOneAndUpdate(
         { _id: req.params.id, customerId: req.authUserId, status: "Pending", paymentStatus: "Pending" },
         { status: "Cancelled", reservationExpiresAt: null },
-        { new: true, runValidators: true, session },
+        { returnDocument: "after", runValidators: true, session },
       );
       if (!booking) return;
       if (booking.slotId) {

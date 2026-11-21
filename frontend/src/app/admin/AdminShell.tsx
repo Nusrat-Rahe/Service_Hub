@@ -30,7 +30,7 @@ const primaryLinks = [
 ];
 const secondaryLinks = [
   { label: "Payments", href: "/admin/payments", icon: TakaSign },
-  { label: "Reviews", href: "/admin/reviews", icon: MessageSquareText },
+  { label: "Manage Reviews", href: "/admin/reviews", icon: MessageSquareText },
   { label: "Notifications", href: "/admin/notifications", icon: Bell },
   { label: "Reports & analytics", href: "/admin/reports", icon: ChartNoAxesCombined },
   { label: "Admin accounts", href: "/admin/accounts", icon: ShieldCheck },

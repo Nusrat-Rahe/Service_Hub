@@ -106,7 +106,8 @@
 }
 
 .section-heading h2,
-.how-section h2 {
+.how-section h2,
+.home-feature-heading h2 {
   margin: 9px 0;
   font-size: clamp(27px, 4vw, 36px);
   letter-spacing: -1.2px;
@@ -751,7 +752,7 @@
 .why-choose-section,
 .popular-services-section {
   padding: 72px 0 78px;
-  background: #f0fdfa;
+  background: var(--color-surface);
   scroll-margin-top: 92px;
 }
 
@@ -761,23 +762,15 @@
 
 .home-feature-heading {
   max-width: 680px;
-  margin: 0 auto 34px;
-  text-align: center;
+  margin: 0 0 34px;
+  text-align: left;
 }
 
 .home-feature-eyebrow {
-  color: #0d9488;
-  font-size: 11px;
+  color: var(--color-primary);
+  font-size: 13px;
   font-weight: 800;
-  letter-spacing: 0.16em;
-}
-
-.home-feature-heading h2 {
-  margin: 10px 0 9px;
-  color: #1f2937;
-  font-size: clamp(29px, 4vw, 39px);
-  font-weight: 800;
-  letter-spacing: -1.4px;
+  letter-spacing: 0.08em;
 }
 
 .home-feature-heading p {

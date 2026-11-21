@@ -28,7 +28,7 @@ export async function expireBookingReservations(now = new Date()) {
             reservationExpiresAt: { $type: "date", $lte: now },
           },
           { $set: { status: "Cancelled", paymentStatus: "Failed", reservationExpiresAt: null } },
-          { new: true, session },
+          { returnDocument: "after", session },
         );
         if (!booking) continue;
 

@@ -20,7 +20,7 @@ export async function seedCategories() {
           status: "Active",
         },
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true },
+      { upsert: true, returnDocument: "after", setDefaultsOnInsert: true },
     );
 
     for (const subcategorySeed of categorySeed.subcategories) {

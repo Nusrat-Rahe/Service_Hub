@@ -9,7 +9,7 @@
 .customer-bookings-heading h1, .customer-booking-detail h1 { margin: 8px 0; color: #1c382d; font-size: clamp(26px, 5vw, 36px); letter-spacing: -1px; }
 .customer-bookings-heading p { margin: 0; color: #86928c; font-size: 13px; }
 .customer-bookings-list { display: grid; gap: 11px; }
-.customer-booking-card { display: grid; grid-template-columns: minmax(0, 1fr) auto auto 30px; align-items: center; gap: 22px; padding: 17px 18px; border: 1px solid #e8efeb; border-radius: 12px; background: #fff; box-shadow: 0 4px 16px rgb(24 51 42 / 3%); }
+.customer-booking-card { display: grid; grid-template-columns: minmax(0, 1fr) auto auto minmax(90px, auto) 30px; align-items: center; gap: 18px; padding: 17px 18px; border: 1px solid #e8efeb; border-radius: 12px; background: #fff; box-shadow: 0 4px 16px rgb(24 51 42 / 3%); }
 .customer-booking-card-main { display: flex; align-items: center; gap: 13px; }
 .customer-booking-icon { width: 42px; height: 42px; display: grid; flex: 0 0 auto; place-items: center; border-radius: 12px; background: #e8f7ef; color: #0b8f68; }
 .customer-booking-id { color: #758b7e; font-size: 10px; font-weight: 750; }
@@ -45,6 +45,31 @@
 .customer-review-form select, .customer-review-form textarea { min-height: 38px; padding: 9px; border: 1px solid #e2ebe5; border-radius: 8px; background: #fff; color: #30483d; font-size: 11px; }
 .customer-review-form textarea { resize: vertical; }
 .customer-review-form > .button { justify-self: start; margin-top: 4px; }
+.customer-booking-review-button, .customer-review-submitted-indicator { display: inline-flex; align-items: center; gap: 5px; margin-top: 9px; color: #0d9488; font-size: 10px; font-weight: 700; }
+.customer-booking-review-button { padding: 0; border: 0; background: none; cursor: pointer; font-family: inherit; }
+.customer-booking-review-button:hover { color: #0f766e; }
+.customer-booking-card-review { min-width: 90px; }
+.customer-review-submitted-indicator { color: #64748b; }
+.customer-review-modal-backdrop { position: fixed; z-index: 120; inset: 0; display: grid; place-items: center; padding: 18px; background: rgb(15 23 42 / 45%); }
+.customer-review-modal { width: min(440px, 100%); padding: 20px; border: 1px solid #e2e8f0; border-radius: 13px; background: #fff; box-shadow: 0 20px 60px rgb(15 23 42 / 18%); }
+.customer-review-modal > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid #e2e8f0; }
+.customer-review-modal > header span { color: #0d9488; font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+.customer-review-modal > header h2 { margin: 5px 0 0; color: #1f2937; font-size: 18px; }
+.customer-review-modal > header > button { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid #e2e8f0; border-radius: 8px; background: #fff; color: #64748b; cursor: pointer; }
+.customer-review-modal > form { display: grid; gap: 9px; padding-top: 15px; }
+.customer-review-modal fieldset { margin: 0 0 3px; padding: 0; border: 0; }
+.customer-review-modal legend, .customer-review-modal label { margin-bottom: 7px; color: #334155; font-size: 11px; font-weight: 700; }
+.customer-review-rating-input { display: flex; align-items: center; gap: 3px; }
+.customer-review-rating-input button { padding: 2px; border: 0; background: transparent; color: #f59e0b; cursor: pointer; }
+.customer-review-rating-input strong { margin-left: 5px; color: #1f2937; font-size: 12px; }
+.customer-review-modal textarea { min-height: 100px; resize: vertical; padding: 10px 11px; border: 1px solid #e2e8f0; border-radius: 8px; outline-color: #0d9488; color: #1f2937; font: inherit; font-size: 11px; line-height: 1.5; }
+.customer-review-modal textarea::placeholder { color: #94a3b8; }
+.customer-review-character-count { justify-self: end; margin-top: -6px; color: #94a3b8; font-size: 9px; }
+.customer-review-modal-error { margin: 0; color: #b42318; font-size: 10px; }
+.customer-review-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.customer-review-modal-actions > button { min-height: 36px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; color: #475569; cursor: pointer; font: inherit; font-size: 10px; font-weight: 700; }
+.customer-review-modal-submit { border-color: #0d9488 !important; background: #0d9488 !important; color: #fff !important; }
+.customer-review-modal-submit:disabled { opacity: .6; cursor: wait; }
 .customer-booking-payment-note { margin: 22px 0 0; color: #8b9690; font-size: 10px; line-height: 1.6; }
 .customer-notifications-list { display: grid; gap: 10px; }
 .customer-notification-card { display: flex; align-items: flex-start; gap: 14px; padding: 18px; border: 1px solid #e8efeb; border-radius: 12px; background: #fff; }
@@ -61,9 +86,11 @@
   .customer-bookings-page { width: calc(100% - 28px); padding-top: 30px; }
   .customer-bookings-heading { align-items: flex-start; }
   .customer-booking-card { grid-template-columns: minmax(0, 1fr) auto 28px; gap: 10px; padding: 13px; }
+  .customer-booking-card-main { grid-column: 1; grid-row: 1; }
   .customer-booking-card .customer-booking-status { grid-column: 2; grid-row: 1; }
-  .customer-booking-price { grid-column: 1 / 3; margin-left: 55px; }
-  .customer-booking-open { grid-column: 3; grid-row: 1 / span 2; }
+  .customer-booking-price { grid-column: 1 / 3; grid-row: 2; margin-left: 55px; }
+  .customer-booking-card-review { grid-column: 1 / 3; grid-row: 3; margin-left: 55px; }
+  .customer-booking-open { grid-column: 3; grid-row: 1 / span 3; }
   .customer-booking-detail-grid { grid-template-columns: 1fr; gap: 17px; }
   .customer-booking-notes { grid-column: auto; }
 }

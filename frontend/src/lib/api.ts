@@ -341,6 +341,46 @@ export type BookingRecord = {
   paymentStatus: "Pending" | "Paid" | "Failed" | "Refunded";
 };
 
+export type ReviewRecord = {
+  _id: string;
+  customerId: string;
+  bookingId: string;
+  bookingReference?: string;
+  serviceId?: string;
+  serviceImage?: string;
+  customerProfileImage?: string;
+  customerName: string;
+  serviceName: string;
+  rating: number;
+  comment: string;
+  status: "Pending" | "Published" | "Rejected" | "Hidden";
+  createdAt: string;
+};
+
+export type PublicReviewRecord = Pick<
+  ReviewRecord,
+  "_id" | "customerName" | "customerProfileImage" | "serviceName" | "serviceId" | "serviceImage" | "rating" | "comment" | "createdAt"
+> & { serviceId: string };
+
+export type ReviewPage = {
+  reviews: PublicReviewRecord[];
+  total: number;
+  offset: number;
+  hasMore: boolean;
+};
+
+export function getMyReviews() {
+  return apiRequest<{ reviews: ReviewRecord[] }>("/api/user/reviews");
+}
+
+export function getReviewTestimonials(offset = 0, limit = 6) {
+  return apiRequest<ReviewPage>(`/api/reviews/testimonials?offset=${offset}&limit=${limit}`);
+}
+
+export function getAdminReviews() {
+  return apiRequest<{ reviews: ReviewRecord[] }>("/api/admin/reviews");
+}
+
 export type PaymentMethod = "bkash" | "card" | "cod" | "bkash_demo" | "card_demo";
 export type BookingPaymentMethod = Exclude<PaymentMethod, "bkash_demo" | "card_demo">;
 export type PaymentStatus = "Paid" | "Pending" | "Failed" | "Refunded";
@@ -509,7 +549,7 @@ export function createReview(
   bookingId: string,
   input: { rating: number; comment: string },
 ) {
-  return apiRequest<{ review: unknown }>(
+  return apiRequest<{ review: ReviewRecord }>(
     `/api/user/bookings/${encodeURIComponent(bookingId)}/reviews`,
     { method: "POST", body: JSON.stringify(input) },
   );
