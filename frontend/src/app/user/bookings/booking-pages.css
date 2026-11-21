@@ -81,6 +81,7 @@
 .payment-method-options { display: grid; gap: 9px; }
 .payment-method-option { min-height: 69px; display: flex; align-items: center; gap: 12px; padding: 11px; border: 1px solid #e6eee9; border-radius: 10px; cursor: pointer; }
 .payment-method-option.is-selected { border-color: #54b58b; background: #f3fbf7; box-shadow: 0 0 0 2px #e6f6ed; }
+.payment-method-option.is-disabled { opacity: .55; cursor: not-allowed; }
 .payment-method-option > input { accent-color: #087f5b; }
 .payment-method-icon { width: 36px; height: 36px; display: grid; flex: 0 0 auto; place-items: center; border-radius: 10px; background: #e7f6ee; color: #087f5b; }
 .payment-method-option > span:last-child { display: grid; gap: 5px; }
@@ -107,8 +108,12 @@
 .payment-status-badge.status-pending { background: #fff5e3; color: #b57d20; }
 .payment-status-badge.status-failed, .payment-status-badge.status-refunded { background: #fff0ef; color: #c45b57; }
 .payment-receipt-actions { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.payment-receipt-links { display: flex; align-items: center; gap: 16px; }
 .payment-receipt-actions .customer-booking-back { margin-bottom: 0; }
+.payment-receipt-history-link { color: #64776c; font-size: 12px; }
 .payment-print-button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid #e2ebe5; border-radius: 8px; background: #fff; color: #476457; cursor: pointer; font-size: 10px; font-weight: 700; }
+.payment-receipt-confirmation { display: flex; align-items: center; gap: 8px; margin: 0 0 18px; padding: 11px 12px; border-radius: 8px; background: #eaf7f0; color: #16835d; font-size: 11px; font-weight: 700; }
+.payment-receipt-confirmation svg { flex: 0 0 auto; }
 .payment-receipt-card { max-width: 780px; margin: 0 auto; padding: clamp(20px, 5vw, 38px); border: 1px solid #e7eee9; border-radius: 15px; background: #fff; box-shadow: 0 10px 35px rgb(24 51 42 / 4%); }
 .payment-receipt-brand { display: flex; align-items: center; gap: 10px; padding-bottom: 19px; border-bottom: 1px solid #edf2ee; }
 .payment-receipt-logo { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: #087f5b; color: #d7f4e5; }
@@ -147,7 +152,10 @@
   .payment-history-filters select { min-width: 0; width: 100%; }
 }
 @media print {
-  .payment-receipt-actions, .customer-booking-back { display: none !important; }
-  .payment-receipt-page { width: 100%; min-height: auto; padding: 0; }
-  .payment-receipt-card { max-width: none; border: 0; box-shadow: none; }
+  @page { margin: 14mm; }
+  body * { visibility: hidden !important; }
+  .payment-receipt-page, .payment-receipt-page * { visibility: visible !important; }
+  .payment-receipt-actions { display: none !important; }
+  .payment-receipt-page { position: absolute; inset: 0; width: 100%; min-height: auto; margin: 0; padding: 0; }
+  .payment-receipt-card { max-width: none; border: 0; box-shadow: none; break-inside: avoid; }
 }

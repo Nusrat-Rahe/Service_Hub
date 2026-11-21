@@ -9,12 +9,16 @@ import mongoose from "mongoose";
 import { Server } from "socket.io";
 import authRouter from "./routes/auth";
 import adminRouter from "./routes/admin";
+import categoriesRouter from "./routes/categories";
 import servicesRouter from "./routes/services";
+import slotsRouter from "./routes/slots";
 import supportRouter from "./routes/support";
 import userRouter from "./routes/user";
 import { User } from "./models/User";
 import { configureSocketServer } from "./realtime";
 import { seedServices } from "./seedServices";
+import { seedCategories } from "./seedCategories";
+import { expireBookingReservations } from "./bookingReservations";
 
 const app = express();
 const httpServer = createServer(app);
@@ -73,7 +77,9 @@ app.use(express.json());
 app.use(cookieParser());
 app.use("/api/auth", authRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/categories", categoriesRouter);
 app.use("/api/services", servicesRouter);
+app.use("/api/slots", slotsRouter);
 app.use("/api/support", supportRouter);
 app.use("/api/user", userRouter);
 
@@ -96,6 +102,14 @@ async function startServer() {
 
   await mongoose.connect(mongoUri);
   await seedServices();
+  await seedCategories();
+  await expireBookingReservations();
+  const reservationCleanup = setInterval(() => {
+    expireBookingReservations().catch((error: unknown) => {
+      console.error("Could not release expired booking reservations.", error);
+    });
+  }, 60_000);
+  reservationCleanup.unref();
 
   const port = Number(process.env.PORT ?? 5000);
   httpServer.listen(port, () => {

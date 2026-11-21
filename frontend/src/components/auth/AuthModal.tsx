@@ -95,7 +95,7 @@ export default function AuthModal({
           {isLogin ? (
             <LoginForm onSuccess={onSuccess} />
           ) : (
-            <RegisterForm onSuccess={onSuccess} />
+            <RegisterForm onNavigateAway={onClose} onSuccess={onSuccess} />
           )}
 
           <p className="auth-modal-switch">

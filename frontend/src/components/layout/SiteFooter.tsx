@@ -7,6 +7,8 @@ const footerSections = [
     links: [
       { label: "Home", href: "/" },
       { label: "Services", href: "/services" },
+      { label: "Why Choose Us", href: "/#why-choose-us" },
+      { label: "Popular Services", href: "/#popular-services" },
     ],
   },
   {

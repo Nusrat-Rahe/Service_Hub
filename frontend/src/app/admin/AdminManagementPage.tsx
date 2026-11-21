@@ -4,13 +4,19 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowDownToLine, ArrowRight, Check, ChevronDown, CirclePlus, Pencil, Search, SlidersHorizontal, Star, Trash2 } from "lucide-react";
 import type { FormEvent } from "react";
 import { sectionDetails } from "./admin-data";
-import { apiRequest, getAdminRecords, getAdminReport, type AdminRecord, type AdminReport } from "@/lib/api";
+import { apiRequest, getAdminRecords, getAdminReport, type AdminRecord, type AdminReport, type PaymentMethod } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
 
 type Props = { section: string };
 
 function statusClass(status = "") {
   return status.toLowerCase().replace(/\s+/g, "-");
+}
+
+function paymentMethodLabel(method: PaymentMethod) {
+  if (method === "bkash" || method === "bkash_demo") return "bKash";
+  if (method === "card" || method === "card_demo") return "Card";
+  return "Cash on Delivery";
 }
 
 function RecordRow({ item, section, onStatusChange, onDelete, onEdit }: {
@@ -24,7 +30,7 @@ function RecordRow({ item, section, onStatusChange, onDelete, onEdit }: {
     <tr>
       <td><span className="admin-record-id">{item.id}</span></td>
       <td><span className="admin-table-primary">{item.name}</span>{item.email && <span className="admin-table-secondary">{item.email}</span>}</td>
-      {section !== "customers" && section !== "admins" && <td>{item.service ?? item.detail ?? "—"}</td>}
+      {section !== "customers" && section !== "admins" && <td>{item.service ?? item.detail ?? "—"}{section === "bookings" && item.category && <span className="admin-table-secondary">{item.category}</span>}{section === "bookings" && item.detail && <span className="admin-table-secondary">{item.detail}</span>}</td>}
       {(section === "customers" || section === "admins") && <td>{item.detail}</td>}
       {(section === "bookings" || section === "payments" || section === "reviews" || section === "notifications") && <td>{item.date}</td>}
       {section === "services" && <td className="admin-price">{formatMoney(item.price ?? 0)}</td>}
@@ -52,12 +58,15 @@ export default function AdminManagementPage({ section }: Props) {
   const [items, setItems] = useState<AdminRecord[]>([]);
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All statuses");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("All payment statuses");
+  const [paymentMethodFilter, setPaymentMethodFilter] = useState("All payment methods");
   const [showForm, setShowForm] = useState(false);
   const [notice, setNotice] = useState("");
   const [newName, setNewName] = useState("");
   const [newPrice, setNewPrice] = useState("75");
   const [newCategory, setNewCategory] = useState("");
   const [newDescription, setNewDescription] = useState("");
+  const [newImage, setNewImage] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newMessage, setNewMessage] = useState("");
@@ -92,7 +101,14 @@ export default function AdminManagementPage({ section }: Props) {
   }, [reportPeriod, section]);
 
   const statuses = useMemo(() => ["All statuses", ...new Set(items.map((item) => item.status).filter((value): value is string => Boolean(value)))], [items]);
-  const filteredItems = items.filter((item) => `${item.id} ${item.name} ${item.email ?? ""} ${item.service ?? ""} ${item.detail ?? ""}`.toLowerCase().includes(query.toLowerCase()) && (filter === "All statuses" || item.status === filter));
+  const filteredItems = items.filter((item) =>
+    `${item.id} ${item.name} ${item.email ?? ""} ${item.service ?? ""} ${item.category ?? ""} ${item.detail ?? ""}`
+      .toLowerCase()
+      .includes(query.toLowerCase()) &&
+    (filter === "All statuses" || item.status === filter) &&
+    (section !== "bookings" || paymentStatusFilter === "All payment statuses" || item.paymentStatus === paymentStatusFilter) &&
+    (section !== "bookings" || paymentMethodFilter === "All payment methods" || item.paymentMethod === paymentMethodFilter),
+  );
 
   async function reloadRecords() {
     setItems(await getAdminRecords(section));
@@ -151,6 +167,7 @@ export default function AdminManagementPage({ section }: Props) {
           name,
           category: newCategory.trim(),
           description: newDescription.trim(),
+          image: newImage.trim(),
           price: parsedPrice,
         };
         if (editingItem) {
@@ -171,6 +188,7 @@ export default function AdminManagementPage({ section }: Props) {
       setNewPrice("75");
       setNewCategory("");
       setNewDescription("");
+      setNewImage("");
       setNewEmail("");
       setNewPassword("");
       setNewMessage("");
@@ -188,6 +206,7 @@ export default function AdminManagementPage({ section }: Props) {
     setNewPrice(String(item.price ?? 0));
     setNewCategory(item.category ?? "");
     setNewDescription(item.description ?? "");
+    setNewImage(item.image ?? "");
     setShowForm(true);
   }
 
@@ -203,13 +222,13 @@ export default function AdminManagementPage({ section }: Props) {
       {showForm && <form className="admin-add-form admin-card" onSubmit={addItem}>
         <label htmlFor="admin-new-record">{section === "notifications" ? "Notification title" : `${details.singular} name`}</label>
         <input autoFocus id="admin-new-record" onChange={(event) => setNewName(event.target.value)} placeholder={`Enter ${details.singular.toLowerCase()} name`} required value={newName} />
-        {section === "services" && <><label htmlFor="admin-new-category">Category</label><input id="admin-new-category" onChange={(event) => setNewCategory(event.target.value)} required value={newCategory} /><label htmlFor="admin-new-description">Description</label><input id="admin-new-description" onChange={(event) => setNewDescription(event.target.value)} required value={newDescription} /><label htmlFor="admin-new-price">Starting price (BDT)</label><input id="admin-new-price" min="0" onChange={(event) => setNewPrice(event.target.value)} required step="0.01" type="number" value={newPrice} /></>}
+        {section === "services" && <><label htmlFor="admin-new-category">Category</label><input id="admin-new-category" onChange={(event) => setNewCategory(event.target.value)} required value={newCategory} /><label htmlFor="admin-new-description">Description</label><input id="admin-new-description" onChange={(event) => setNewDescription(event.target.value)} required value={newDescription} /><label htmlFor="admin-new-image">Image URL</label><input id="admin-new-image" onChange={(event) => setNewImage(event.target.value)} placeholder="https://… or /images/…" value={newImage} /><label htmlFor="admin-new-price">Starting price (BDT)</label><input id="admin-new-price" min="0" onChange={(event) => setNewPrice(event.target.value)} required step="0.01" type="number" value={newPrice} /></>}
         {section === "admins" && !editingItem && <><label htmlFor="admin-new-email">Email address</label><input autoComplete="email" id="admin-new-email" onChange={(event) => setNewEmail(event.target.value)} required type="email" value={newEmail} /><label htmlFor="admin-new-password">Temporary password</label><input autoComplete="new-password" id="admin-new-password" minLength={8} onChange={(event) => setNewPassword(event.target.value)} required type="password" value={newPassword} /></>}
         {section === "notifications" && <><label htmlFor="admin-new-message">Message</label><textarea id="admin-new-message" onChange={(event) => setNewMessage(event.target.value)} required value={newMessage} /><label htmlFor="admin-new-audience">Audience</label><select id="admin-new-audience" onChange={(event) => setNewAudience(event.target.value)} value={newAudience}><option>All customers</option><option>Active customers</option></select><p className="admin-form-help">Notifications are saved as drafts. Publishing delivers them in the customer account; email/SMS delivery needs a provider.</p></>}
-        <button className="admin-button" disabled={isSubmitting} type="submit">{isSubmitting ? "Saving..." : editingItem ? "Save changes" : section === "notifications" ? "Save draft" : `Save ${details.singular.toLowerCase()}`}</button><button className="admin-button admin-button-outline" onClick={() => { setShowForm(false); setEditingItem(null); setNewName(""); setNewPrice("75"); setNewCategory(""); setNewDescription(""); }} type="button">Cancel</button>
+        <button className="admin-button" disabled={isSubmitting} type="submit">{isSubmitting ? "Saving..." : editingItem ? "Save changes" : section === "notifications" ? "Save draft" : `Save ${details.singular.toLowerCase()}`}</button><button className="admin-button admin-button-outline" onClick={() => { setShowForm(false); setEditingItem(null); setNewName(""); setNewPrice("75"); setNewCategory(""); setNewDescription(""); setNewImage(""); }} type="button">Cancel</button>
       </form>}
       <div className="admin-card admin-table-card">
-        <div className="admin-table-toolbar"><div><h2>{details.title} list</h2><span>{items.length} {details.title.toLowerCase()} total</span></div><div className="admin-table-tools"><label className="admin-table-search"><Search size={16} /><input aria-label={`Search ${details.title.toLowerCase()}`} onChange={(event) => setQuery(event.target.value)} placeholder="Search..." value={query} /></label><label className="admin-filter"><SlidersHorizontal size={15} /><select aria-label="Filter by status" onChange={(event) => setFilter(event.target.value)} value={filter}>{statuses.map((status) => <option key={status}>{status}</option>)}</select><ChevronDown size={13} /></label></div></div>
+        <div className="admin-table-toolbar"><div><h2>{details.title} list</h2><span>{items.length} {details.title.toLowerCase()} total</span></div><div className="admin-table-tools"><label className="admin-table-search"><Search size={16} /><input aria-label={`Search ${details.title.toLowerCase()}`} onChange={(event) => setQuery(event.target.value)} placeholder="Search..." value={query} /></label><label className="admin-filter"><SlidersHorizontal size={15} /><select aria-label="Filter by status" onChange={(event) => setFilter(event.target.value)} value={filter}>{statuses.map((status) => <option key={status}>{status}</option>)}</select><ChevronDown size={13} /></label>{section === "bookings" && <><label className="admin-filter"><select aria-label="Filter by payment status" onChange={(event) => setPaymentStatusFilter(event.target.value)} value={paymentStatusFilter}><option>All payment statuses</option>{[...new Set(items.map((item) => item.paymentStatus).filter((value): value is string => Boolean(value)))].map((value) => <option key={value}>{value}</option>)}</select></label><label className="admin-filter"><select aria-label="Filter by payment method" onChange={(event) => setPaymentMethodFilter(event.target.value)} value={paymentMethodFilter}><option>All payment methods</option>{[...new Set(items.map((item) => item.paymentMethod).filter((value): value is PaymentMethod => Boolean(value)))].map((value) => <option key={value} value={value}>{paymentMethodLabel(value)}</option>)}</select></label></>}</div></div>
         <div className="admin-table-scroll"><table className="admin-table"><thead><tr><th>ID</th><th>{section === "customers" || section === "admins" ? "Name" : section === "notifications" ? "Title" : "Customer"}</th>{section !== "customers" && section !== "admins" && <th>{section === "notifications" ? "Details" : "Service"}</th>}{(section === "customers" || section === "admins") && <th>Details</th>}{["bookings", "payments", "reviews", "notifications"].includes(section) && <th>Date</th>}{section === "services" && <th>Price</th>}{section === "reviews" && <th>Rating</th>}{section !== "reviews" && section !== "notifications" && <th>Status</th>}{(section === "reviews" || section === "notifications") && <th>Status</th>}{["bookings", "payments"].includes(section) && <th>Amount</th>}<th><span className="sr-only">Actions</span></th></tr></thead><tbody>{filteredItems.map((item) => <RecordRow item={item} key={item.resourceId ?? item.id} onDelete={deleteItem} onEdit={startEditing} onStatusChange={updateStatus} section={section} />)}</tbody></table></div>
         {isLoading && <div className="admin-table-empty">Loading {details.title.toLowerCase()}…</div>}
         {!isLoading && notice && items.length === 0 && <div className="admin-table-empty">{notice}</div>}

@@ -8,8 +8,8 @@ import { formatMoney } from "@/lib/money";
 import "./../bookings/booking-pages.css";
 
 function methodLabel(method?: PaymentMethod) {
-  if (method === "bkash_demo") return "bKash";
-  if (method === "card_demo") return "Card";
+  if (method === "bkash" || method === "bkash_demo") return "bKash";
+  if (method === "card" || method === "card_demo") return "Card";
   if (method === "cod") return "Cash on Delivery";
   return "Legacy payment";
 }
@@ -54,8 +54,8 @@ export default function PaymentHistoryPage() {
         <label>Payment method
           <select onChange={(event) => { setIsLoading(true); setMethod(event.target.value); }} value={method}>
             <option value="">All methods</option>
-            <option value="bkash_demo">bKash</option>
-            <option value="card_demo">Card</option>
+            <option value="bkash">bKash</option>
+            <option value="card">Card</option>
             <option value="cod">Cash on Delivery</option>
           </select>
         </label>

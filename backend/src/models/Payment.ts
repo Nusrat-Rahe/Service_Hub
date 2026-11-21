@@ -9,7 +9,7 @@ const paymentSchema = new Schema(
     customerName: { type: String, required: true, trim: true, maxlength: 100 },
     customerEmail: { type: String, trim: true, lowercase: true, maxlength: 254 },
     serviceName: { type: String, required: true, trim: true, maxlength: 100 },
-    paymentMethod: { type: String, enum: ["bkash_demo", "card_demo", "cod"], required: true },
+    paymentMethod: { type: String, enum: ["bkash", "card", "cod", "bkash_demo", "card_demo"], required: true },
     date: { type: Date, required: true },
     amount: { type: Number, required: true, min: 0 },
     currency: { type: String, required: true, default: process.env.CURRENCY ?? "BDT" },

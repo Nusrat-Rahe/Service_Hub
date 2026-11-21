@@ -41,11 +41,14 @@ export type AdminRecord = {
   service?: string;
   category?: string;
   description?: string;
+  image?: string;
   date?: string;
   price?: number;
   status?: string;
   detail?: string;
   rating?: number;
+  paymentStatus?: string;
+  paymentMethod?: PaymentMethod;
 };
 
 function isObject(value: unknown): value is ApiObject {
@@ -63,6 +66,20 @@ function displayDate(value: unknown): string {
   }).format(date);
 }
 
+function displayDateTime(value: unknown): string {
+  if (typeof value !== "string" && !(value instanceof Date)) return "—";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Dhaka",
+  }).format(date);
+}
+
 function recordId(record: ApiObject): string {
   const id = record._id ?? record.id;
   return typeof id === "string" ? id : "";
@@ -71,6 +88,16 @@ function recordId(record: ApiObject): string {
 function stringValue(record: ApiObject, key: string, fallback = ""): string {
   const value = record[key];
   return typeof value === "string" ? value : fallback;
+}
+
+function isPaymentMethod(value: string): value is PaymentMethod {
+  return ["bkash", "card", "cod", "bkash_demo", "card_demo"].includes(value);
+}
+
+function displayPaymentMethod(value: string): PaymentMethod | undefined {
+  if (value === "bkash_demo") return "bkash";
+  if (value === "card_demo") return "card";
+  return isPaymentMethod(value) ? value : undefined;
 }
 
 function numberValue(record: ApiObject, key: string): number {
@@ -98,21 +125,30 @@ function mapRecord(section: string, record: ApiObject): AdminRecord {
       service: stringValue(record, "category"),
       category: stringValue(record, "category"),
       description: stringValue(record, "description"),
+      image: stringValue(record, "image"),
       detail: stringValue(record, "description"),
       price: numberValue(record, "price"),
       status,
     };
   }
   if (section === "bookings") {
+    const categoryName = stringValue(record, "categoryName");
+    const phone = stringValue(record, "phone");
+    const address = stringValue(record, "address");
+    const paymentStatus = stringValue(record, "paymentStatus", "Pending");
+    const paymentMethod = stringValue(record, "paymentMethod");
     return {
       id: stringValue(record, "bookingId", recordId(record)),
       resourceId: recordId(record),
       name: stringValue(record, "customerName", "Customer"),
       service: stringValue(record, "serviceName"),
-      date: displayDate(record.date),
+      category: categoryName,
+      paymentStatus,
+      paymentMethod: displayPaymentMethod(paymentMethod),
+      date: displayDateTime(record.date),
       price: numberValue(record, "price"),
       status,
-      detail: stringValue(record, "address"),
+      detail: `Phone: ${phone || "—"} · ${address || "—"} · ${paymentMethod ? displayPaymentMethod(paymentMethod) ?? "Not selected" : "Not selected"} · ${paymentStatus}`,
     };
   }
   if (section === "payments") {
@@ -227,11 +263,59 @@ export function getServices() {
   return apiRequest<{ services: ServiceRecord[] }>("/api/services");
 }
 
+export type SubcategoryRecord = {
+  _id: string;
+  categoryId: string;
+  name: string;
+  slug: string;
+  description: string;
+  includes: string[];
+  duration: string;
+};
+
+export type CategoryRecord = {
+  _id: string;
+  name: string;
+  slug: string;
+  heading: string;
+  service: ServiceRecord;
+  subcategories: SubcategoryRecord[];
+};
+
+export function getCategories() {
+  return apiRequest<{ categories: CategoryRecord[] }>("/api/categories");
+}
+
+export function getCategory(identifier: string) {
+  return apiRequest<{ category: CategoryRecord }>(`/api/categories/${encodeURIComponent(identifier)}`);
+}
+
+export type ServiceSlot = {
+  _id: string;
+  serviceId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  available: boolean;
+};
+
+export function getServiceSlots(serviceId: string, month: string) {
+  const search = new URLSearchParams({ serviceId, month });
+  return apiRequest<{ slots: ServiceSlot[] }>(`/api/slots?${search.toString()}`);
+}
+
+export function getPopularServices() {
+  return apiRequest<{ services: PopularServiceRecord[] }>("/api/services/popular");
+}
+
+export type PopularServiceRecord = Pick<ServiceRecord, "_id" | "name" | "description" | "image">;
+
 export type ServiceRecord = {
   _id: string;
   name: string;
   category: string;
   description: string;
+  image?: string;
   price: number;
   status: "Active" | "Inactive";
 };
@@ -240,15 +324,25 @@ export type BookingRecord = {
   _id: string;
   bookingId: string;
   serviceName: string;
+  categoryName?: string;
+  subcategoryName?: string;
+  serviceTypeName?: string;
+  categoryId?: string;
+  subcategoryId?: string;
   date: string;
+  startTime?: string;
+  endTime?: string;
+  phone?: string;
   address: string;
   notes: string;
   price: number;
   status: "Pending" | "Confirmed" | "Completed" | "Cancelled";
-  paymentStatus: "Pending" | "Paid" | "Refunded";
+  paymentMethod?: PaymentMethod;
+  paymentStatus: "Pending" | "Paid" | "Failed" | "Refunded";
 };
 
-export type PaymentMethod = "bkash_demo" | "card_demo" | "cod";
+export type PaymentMethod = "bkash" | "card" | "cod" | "bkash_demo" | "card_demo";
+export type BookingPaymentMethod = Exclude<PaymentMethod, "bkash_demo" | "card_demo">;
 export type PaymentStatus = "Paid" | "Pending" | "Failed" | "Refunded";
 
 export type PaymentRecord = {
@@ -273,9 +367,16 @@ export type PaymentRecord = {
 export type PaymentBookingDetails = {
   bookingId: string;
   date: string;
+  startTime?: string;
+  endTime?: string;
+  categoryName?: string;
+  subcategoryName?: string;
+  phone?: string;
   address: string;
   notes: string;
   status: BookingRecord["status"];
+  paymentStatus?: BookingRecord["paymentStatus"];
+  paymentMethod?: PaymentMethod;
 };
 
 export function getMyPayments(filters: { status?: string; method?: string } = {}) {
@@ -298,7 +399,7 @@ export function getMyBookingPayment(id: string) {
   );
 }
 
-export function createBookingPayment(id: string, paymentMethod: PaymentMethod) {
+export function createBookingPayment(id: string, paymentMethod: BookingPaymentMethod) {
   return apiRequest<{ payment: PaymentRecord }>(
     `/api/user/bookings/${encodeURIComponent(id)}/payment`,
     { method: "POST", body: JSON.stringify({ paymentMethod }) },
@@ -380,11 +481,18 @@ export function getMyBooking(id: string) {
 
 export function createBooking(input: {
   serviceId: string;
+  categoryId: string;
+  subcategoryId: string;
+  slotId: string;
   date: string;
+  fullName: string;
+  email: string;
+  phone: string;
   address: string;
   notes: string;
+  paymentMethod: BookingPaymentMethod;
 }) {
-  return apiRequest<{ booking: BookingRecord }>("/api/user/bookings", {
+  return apiRequest<{ booking: BookingRecord; payment: PaymentRecord }>("/api/user/bookings", {
     method: "POST",
     body: JSON.stringify(input),
   });

@@ -4,10 +4,13 @@ import mongoose from "mongoose";
 import { requireAuth } from "../middleware/requireAuth";
 import { Booking } from "../models/Booking";
 import { AdminBookingNotification } from "../models/AdminBookingNotification";
+import { Category } from "../models/Category";
 import { Notification } from "../models/Notification";
 import { Payment } from "../models/Payment";
 import { Review } from "../models/Review";
 import { Service } from "../models/Service";
+import { Slot } from "../models/Slot";
+import { Subcategory } from "../models/Subcategory";
 import { User } from "../models/User";
 import { emitBookingNotification } from "../realtime";
 
@@ -18,7 +21,7 @@ function isText(value: unknown, maxLength: number): value is string {
   return typeof value === "string" && value.trim().length > 0 && value.trim().length <= maxLength;
 }
 
-const paymentMethods = ["bkash_demo", "card_demo", "cod"] as const;
+const paymentMethods = ["bkash", "card", "cod", "bkash_demo", "card_demo"] as const;
 const paymentStatuses = ["Pending", "Paid", "Failed", "Refunded"] as const;
 
 function getDhakaDateKey(date: Date): string {
@@ -106,69 +109,153 @@ router.get("/bookings", async (req, res, next) => {
 });
 
 router.post("/bookings", async (req, res, next) => {
-  const { serviceId, date, address, notes } = req.body as Record<string, unknown>;
+  const { serviceId, categoryId, subcategoryId, slotId, date, fullName, email, phone, address, notes, paymentMethod } = req.body as Record<string, unknown>;
   const bookingDate = typeof date === "string" ? new Date(date) : null;
   if (
     typeof serviceId !== "string" ||
     !mongoose.isValidObjectId(serviceId) ||
+    typeof categoryId !== "string" ||
+    !mongoose.isValidObjectId(categoryId) ||
+    typeof subcategoryId !== "string" ||
+    !mongoose.isValidObjectId(subcategoryId) ||
+    typeof slotId !== "string" ||
+    !mongoose.isValidObjectId(slotId) ||
     typeof date !== "string" ||
     !bookingDate ||
     !Number.isFinite(bookingDate.getTime()) ||
     getDhakaDateKey(bookingDate) < getDhakaDateKey(new Date()) ||
+    !isText(fullName, 100) ||
+    !isText(email, 254) ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) ||
+    !isText(phone, 30) ||
     !isText(address, 300) ||
+    (paymentMethod !== "bkash" && paymentMethod !== "card" && paymentMethod !== "cod") ||
     (notes !== undefined && typeof notes !== "string") ||
     (typeof notes === "string" && notes.length > 1000)
   ) {
-    res.status(400).json({ message: "Choose an active service, future date, and valid service address." });
+    res.status(400).json({ message: "Choose an active service, available time slot, payment method, phone number, and valid service address." });
     return;
   }
 
+  const bookingCode = `SH-${randomUUID().replaceAll("-", "").slice(0, 8).toUpperCase()}`;
+  const session = await mongoose.startSession();
   try {
-    const [service, customer] = await Promise.all([
-      Service.findOne({ _id: serviceId, status: "Active" }),
-      User.findById(req.authUserId).select("fullName email"),
-    ]);
-    if (!service) {
-      res.status(404).json({ message: "This service is no longer available." });
-      return;
+    const createdRecords: {
+      booking: InstanceType<typeof Booking> | null;
+      payment: InstanceType<typeof Payment> | null;
+      notification: InstanceType<typeof AdminBookingNotification> | null;
+    } = { booking: null, payment: null, notification: null };
+    await session.withTransaction(async () => {
+      const service = await Service.findOne({ _id: serviceId, status: "Active" }).session(session);
+      const category = await Category.findOne({ _id: categoryId, serviceId, status: "Active" }).session(session);
+      const subcategory = await Subcategory.findOne({ _id: subcategoryId, categoryId, status: "Active" }).session(session);
+      const customer = await User.findById(req.authUserId).select("fullName email").session(session);
+      if (!service) throw new SlotReservationConflict("This service is no longer available.");
+      if (!category || !subcategory) throw new SlotReservationConflict("This service type is no longer available.");
+      if (!customer) throw new SlotReservationConflict("Your account could not be found.");
+
+      const slot = await Slot.findOneAndUpdate(
+        {
+          _id: slotId,
+          serviceId,
+          $expr: {
+            $lt: [{ $add: ["$bookedCount", "$reservedCount"] }, "$capacity"],
+          },
+        },
+        { $inc: { bookedCount: 1 } },
+        { new: true, session },
+      );
+      if (!slot) throw new SlotReservationConflict("This time slot has just been booked. Choose another available time.");
+
+      const slotDate = new Date(`${slot.date}T${slot.startTime}:00+06:00`);
+      if (
+        slotDate.getTime() !== bookingDate.getTime() ||
+        slotDate <= new Date()
+      ) {
+        throw new SlotReservationConflict("This time slot is no longer available. Choose another time.");
+      }
+
+      const isPaid = paymentMethod !== "cod";
+      const [booking] = await Booking.create([{
+        bookingId: bookingCode,
+        customerId: customer.id,
+        customerName: fullName.trim(),
+        customerEmail: email.trim().toLowerCase(),
+        phone: phone.trim(),
+        serviceId: service.id,
+        categoryId: category._id,
+        subcategoryId: subcategory._id,
+        slotId: slot._id,
+        serviceName: subcategory.name,
+        categoryName: category.name,
+        subcategoryName: subcategory.name,
+        serviceTypeName: subcategory.name,
+        date: slotDate,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        address: address.trim(),
+        notes: typeof notes === "string" ? notes.trim() : "",
+        price: service.price,
+        paymentMethod,
+        paymentStatus: isPaid ? "Paid" : "Pending",
+        status: isPaid ? "Confirmed" : "Pending",
+        reservationExpiresAt: null,
+      }], { session });
+      createdRecords.booking = booking;
+
+      const [payment] = await Payment.create([{
+        transactionId: `SH-PAY-${randomUUID().replaceAll("-", "").toUpperCase()}`,
+        bookingId: booking._id,
+        bookingCode: booking.bookingId,
+        customerId: booking.customerId,
+        customerName: booking.customerName,
+        customerEmail: booking.customerEmail,
+        serviceName: booking.serviceName,
+        paymentMethod,
+        date: new Date(),
+        amount: booking.price,
+        status: isPaid ? "Paid" : "Pending",
+      }], { session });
+      createdRecords.payment = payment;
+
+      const [notification] = await AdminBookingNotification.create([{
+        bookingRef: booking._id,
+        bookingId: booking.bookingId,
+        customerName: booking.customerName,
+        serviceName: booking.serviceName,
+        appointmentDate: booking.date,
+      }], { session });
+      createdRecords.notification = notification;
+    });
+
+    const { booking, payment, notification } = createdRecords;
+    if (!booking || !payment || !notification) throw new Error("The booking could not be created.");
+    try {
+      emitBookingNotification({
+        _id: notification.id,
+        bookingRef: booking.id,
+        bookingId: notification.bookingId,
+        customerName: notification.customerName,
+        serviceName: notification.serviceName,
+        appointmentDate: notification.appointmentDate,
+        createdAt: notification.createdAt,
+      });
+    } catch (error) {
+      console.error("Booking was saved, but the live admin notification could not be sent.", error);
     }
-    if (!customer) {
-      res.status(401).json({ message: "Your account could not be found." });
-      return;
-    }
-    const booking = await Booking.create({
-      bookingId: `SH-${randomUUID().replaceAll("-", "").slice(0, 8).toUpperCase()}`,
-      customerId: customer.id,
-      customerName: customer.fullName,
-      customerEmail: customer.email,
-      serviceId: service.id,
-      serviceName: service.name,
-      date: bookingDate,
-      address: address.trim(),
-      notes: typeof notes === "string" ? notes.trim() : "",
-      price: service.price,
-    });
-    const adminNotification = await AdminBookingNotification.create({
-      bookingRef: booking._id,
-      bookingId: booking.bookingId,
-      customerName: booking.customerName,
-      serviceName: booking.serviceName,
-      appointmentDate: booking.date,
-    });
-    emitBookingNotification({
-      _id: adminNotification.id,
-      bookingRef: booking.id,
-      bookingId: adminNotification.bookingId,
-      customerName: adminNotification.customerName,
-      serviceName: adminNotification.serviceName,
-      appointmentDate: adminNotification.appointmentDate,
-      createdAt: adminNotification.createdAt,
-    });
-    res.status(201).json({ booking });
+    res.status(201).json({ booking, payment });
   } catch (error) {
+    if (error instanceof SlotReservationConflict) {
+      res.status(error.message.startsWith("Your account") ? 401 : error.message.startsWith("This service") ? 404 : 409).json({ message: error.message });
+      return;
+    }
     next(error);
+  } finally {
+    await session.endSession();
   }
 });
+
+class SlotReservationConflict extends Error {}
 
 router.get("/bookings/:id", async (req, res, next) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
@@ -219,8 +306,8 @@ router.post("/bookings/:id/payment", async (req, res, next) => {
     res.status(400).json({ message: "Invalid booking ID." });
     return;
   }
-  if (!paymentMethods.includes(paymentMethod as (typeof paymentMethods)[number])) {
-    res.status(400).json({ message: "Choose bKash Demo, Card Demo, or Cash on Delivery." });
+  if (paymentMethod !== "bkash" && paymentMethod !== "card" && paymentMethod !== "cod") {
+    res.status(400).json({ message: "Choose bKash, Card, or Cash on Delivery." });
     return;
   }
 
@@ -233,6 +320,7 @@ router.post("/bookings/:id/payment", async (req, res, next) => {
         customerId: req.authUserId,
         status: { $ne: "Cancelled" },
         paymentStatus: "Pending",
+        reservationExpiresAt: { $gt: new Date() },
       }).session(session);
       if (!booking) {
         const existing = await Payment.findOne({
@@ -245,7 +333,7 @@ router.post("/bookings/:id/payment", async (req, res, next) => {
         throw new PaymentConflict("This booking is unavailable for payment.");
       }
 
-      const isCod = paymentMethod === "cod";
+      const isPaid = paymentMethod !== "cod";
       payment = new Payment({
         transactionId: `SH-PAY-${randomUUID().replaceAll("-", "").toUpperCase()}`,
         bookingId: booking._id,
@@ -257,13 +345,29 @@ router.post("/bookings/:id/payment", async (req, res, next) => {
         paymentMethod,
         date: new Date(),
         amount: booking.price,
-        status: isCod ? "Pending" : "Paid",
+        status: isPaid ? "Paid" : "Pending",
       });
       await payment.save({ session });
 
+      const slotUpdate = await Slot.updateOne(
+        { _id: booking.slotId, reservedCount: { $gt: 0 } },
+        { $inc: { reservedCount: -1, bookedCount: 1 } },
+        { session },
+      );
+      if (slotUpdate.matchedCount !== 1) {
+        throw new PaymentConflict("The reserved time slot could not be confirmed.");
+      }
+
       const updatedBooking = await Booking.updateOne(
         { _id: booking._id, customerId: req.authUserId, paymentStatus: "Pending" },
-        { $set: { paymentStatus: isCod ? "Pending" : "Paid" } },
+        {
+          $set: {
+            paymentStatus: isPaid ? "Paid" : "Pending",
+            paymentMethod,
+            ...(isPaid && booking.status === "Pending" ? { status: "Confirmed" } : {}),
+            reservationExpiresAt: null,
+          },
+        },
         { session },
       );
       if (updatedBooking.matchedCount !== 1) {
@@ -326,7 +430,7 @@ router.get("/payments/:id", async (req, res, next) => {
       _id: payment.bookingId,
       customerId: req.authUserId,
     })
-      .select("bookingId date address notes status")
+      .select("bookingId date startTime endTime categoryName subcategoryName phone address notes status paymentStatus paymentMethod")
       .lean();
     res.json({ payment, booking });
   } catch (error) {
@@ -339,24 +443,44 @@ router.patch("/bookings/:id/cancel", async (req, res, next) => {
     res.status(400).json({ message: "Invalid booking ID." });
     return;
   }
+  const session = await mongoose.startSession();
   try {
-    const existingPayment = await Payment.exists({ bookingId: req.params.id });
-    if (existingPayment) {
-      res.status(409).json({ message: "A booking with a payment record cannot be cancelled online. Please contact ServiceHub support." });
-      return;
-    }
-    const booking = await Booking.findOneAndUpdate(
-      { _id: req.params.id, customerId: req.authUserId, status: "Pending", paymentStatus: "Pending" },
-      { status: "Cancelled" },
-      { new: true, runValidators: true },
-    );
+    let booking: InstanceType<typeof Booking> | null = null;
+    await session.withTransaction(async () => {
+      const existingPayment = await Payment.exists({ bookingId: req.params.id }).session(session);
+      if (existingPayment) {
+        throw new PaymentConflict("A booking with a payment record cannot be cancelled online. Please contact ServiceHub support.");
+      }
+      booking = await Booking.findOneAndUpdate(
+        { _id: req.params.id, customerId: req.authUserId, status: "Pending", paymentStatus: "Pending" },
+        { status: "Cancelled", reservationExpiresAt: null },
+        { new: true, runValidators: true, session },
+      );
+      if (!booking) return;
+      if (booking.slotId) {
+        const slotUpdate = await Slot.updateOne(
+          { _id: booking.slotId, reservedCount: { $gt: 0 } },
+          { $inc: { reservedCount: -1 } },
+          { session },
+        );
+        if (slotUpdate.matchedCount !== 1) {
+          throw new PaymentConflict("The reserved time slot could not be released. Please contact ServiceHub support.");
+        }
+      }
+    });
     if (!booking) {
       res.status(409).json({ message: "Only pending bookings can be cancelled by customers." });
       return;
     }
     res.json({ booking });
   } catch (error) {
+    if (error instanceof PaymentConflict) {
+      res.status(409).json({ message: error.message });
+      return;
+    }
     next(error);
+  } finally {
+    await session.endSession();
   }
 });
 

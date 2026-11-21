@@ -9,19 +9,20 @@ import {
   getMyBooking,
   getMyBookingPayment,
   type BookingRecord,
-  type PaymentMethod,
+  type BookingPaymentMethod,
 } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
 import "./../../booking-pages.css";
 
 const methods: Array<{
-  id: PaymentMethod;
+  id: BookingPaymentMethod;
   title: string;
+  note: string;
   icon: typeof CreditCard;
 }> = [
-  { id: "bkash_demo", title: "bKash", icon: Banknote },
-  { id: "card_demo", title: "Card", icon: CreditCard },
-  { id: "cod", title: "Cash on Delivery", icon: Banknote },
+  { id: "bkash", title: "bKash", note: "Academic project simulation; no real transaction.", icon: Banknote },
+  { id: "card", title: "Card", note: "Academic project simulation; no real transaction.", icon: CreditCard },
+  { id: "cod", title: "Cash on Delivery", note: "Payment remains pending until received.", icon: Banknote },
 ];
 
 export default function BookingPaymentPage() {
@@ -36,7 +37,7 @@ function BookingPaymentContent() {
   const { bookingId } = useParams<{ bookingId: string }>();
   const router = useRouter();
   const [booking, setBooking] = useState<BookingRecord | null>(null);
-  const [method, setMethod] = useState<PaymentMethod>("bkash_demo");
+  const [method, setMethod] = useState<BookingPaymentMethod>("cod");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -87,7 +88,7 @@ function BookingPaymentContent() {
     <main className="customer-bookings-page payment-page">
       <Link className="customer-booking-back" href={`/user/bookings/${bookingId}`}><ArrowLeft size={16} /> Booking details</Link>
       <header className="customer-bookings-heading">
-        <div><span className="eyebrow">PAYMENT CHECKOUT</span><h1>Choose how to pay</h1><p>Online payment records do not represent real transactions. No payment credentials are requested or stored.</p></div>
+        <div><span className="eyebrow">BOOKING PAYMENT</span><h1>Choose a payment method</h1><p>bKash and Card are simulated for this academic project. No real transaction or payment details are required.</p></div>
       </header>
       {error && <p className="customer-bookings-error" role="alert">{error}</p>}
       {booking && <div className="payment-checkout-grid">
@@ -97,7 +98,7 @@ function BookingPaymentContent() {
           <div className="payment-summary-details">
             <div><span>Booking reference</span><strong>{booking.bookingId}</strong></div>
             <div><span>Service</span><strong>{booking.serviceName}</strong></div>
-            <div><span>Appointment</span><strong>{new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(booking.date))}</strong></div>
+            <div><span>Appointment</span><strong>{new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Dhaka" }).format(new Date(booking.date))}</strong></div>
             <div><span>Service address</span><strong>{booking.address}</strong></div>
             {booking.notes && <div><span>Service notes</span><strong>{booking.notes}</strong></div>}
             <div className="payment-total"><span>Total amount</span><strong>{formatMoney(booking.price)}</strong></div>
@@ -105,19 +106,20 @@ function BookingPaymentContent() {
         </section>
         <section className="customer-booking-detail payment-method-card">
           <h2>Payment method</h2>
-          <p>Select an online payment method or choose Cash on Delivery.</p>
+          <p>Choose one payment method for this booking.</p>
           <div className="payment-method-options">
-            {methods.map(({ id, title, icon: Icon }) => (
+            {methods.map(({ id, title, note, icon: Icon }) => (
               <label className={`payment-method-option${method === id ? " is-selected" : ""}`} key={id}>
                 <input checked={method === id} name="payment-method" onChange={() => setMethod(id)} type="radio" value={id} />
                 <span className="payment-method-icon"><Icon size={19} /></span>
-                <span><strong>{title}</strong></span>
+                <span><strong>{title}</strong><small>{note}</small></span>
               </label>
             ))}
           </div>
+          {method !== "cod" && <div className="payment-method-note"><CreditCard size={17} /><span>No PIN, OTP, card number, or external payment site is used.</span></div>}
           {method === "cod" && <div className="payment-method-note"><Banknote size={17} /><span>Cash on Delivery stays pending until an administrator confirms payment after service completion.</span></div>}
           <button className="button payment-submit-button" disabled={isSubmitting} onClick={submitPayment} type="button">
-            {isSubmitting ? "Saving payment…" : method === "cod" ? "Choose Cash on Delivery" : "Confirm online payment"}
+            {isSubmitting ? "Confirming…" : "Confirm Booking"}
           </button>
         </section>
       </div>}

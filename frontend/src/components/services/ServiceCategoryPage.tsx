@@ -1,8 +1,28 @@
-import Link from "next/link";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import type { ServiceCategory } from "@/lib/service-categories";
+"use client";
 
-export default function ServiceCategoryPage({ category }: { category: ServiceCategory }) {
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
+import { getCategory, type CategoryRecord } from "@/lib/api";
+
+export default function ServiceCategoryPage({ slug }: { slug: string }) {
+  const [category, setCategory] = useState<CategoryRecord | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    getCategory(slug)
+      .then(({ category: record }) => { if (active) setCategory(record); })
+      .catch((requestError: unknown) => {
+        if (active) setError(requestError instanceof Error ? requestError.message : "Could not load this category.");
+      });
+    return () => { active = false; };
+  }, [slug]);
+
+  if (!category) {
+    return <main className="service-category-page"><div className="container"><p role={error ? "alert" : "status"}>{error || "Loading service types…"}</p></div></main>;
+  }
+
   return (
     <main className="service-category-page">
       <div className="container">
@@ -10,12 +30,12 @@ export default function ServiceCategoryPage({ category }: { category: ServiceCat
           <ArrowLeft size={16} /> All services
         </Link>
         <header className="service-category-heading">
-          <span className="eyebrow">{category.serviceName}</span>
+          <span className="eyebrow">{category.name}</span>
           <h1>{category.heading}</h1>
           <p>Select the type of service that best suits your needs.</p>
         </header>
         <div className="service-category-grid">
-          {category.types.map((serviceType) => (
+          {category.subcategories.map((serviceType) => (
             <Link
               className="service-category-card"
               href={`/services/${category.slug}/${serviceType.slug}`}
@@ -30,6 +50,7 @@ export default function ServiceCategoryPage({ category }: { category: ServiceCat
             </Link>
           ))}
         </div>
+        {!category.subcategories.length && <p>No service types are available right now.</p>}
       </div>
     </main>
   );

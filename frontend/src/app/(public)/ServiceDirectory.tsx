@@ -3,9 +3,8 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { getServices, type ServiceRecord } from "@/lib/api";
+import { getCategories, getServices, type CategoryRecord, type ServiceRecord } from "@/lib/api";
 import { formatMoney } from "@/lib/money";
-import { getServiceCategoryByName } from "@/lib/service-categories";
 
 const serviceImages: Record<string, string> = {
   cleaning: "/images/services/cleaning.jpg",
@@ -23,13 +22,19 @@ function ServiceDirectoryContent() {
   const category = searchParams.get("category") ?? "";
   const query = searchParams.get("q") ?? "";
   const [services, setServices] = useState<ServiceRecord[]>([]);
+  const [serviceCategories, setServiceCategories] = useState<CategoryRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let active = true;
-    getServices()
-      .then(({ services: records }) => { if (active) setServices(records); })
+    Promise.all([getServices(), getCategories()])
+      .then(([{ services: records }, { categories: categoryRecords }]) => {
+        if (active) {
+          setServices(records);
+          setServiceCategories(categoryRecords);
+        }
+      })
       .catch((requestError: unknown) => { if (active) setError(requestError instanceof Error ? requestError.message : "Could not load services."); })
       .finally(() => { if (active) setIsLoading(false); });
     return () => { active = false; };
@@ -85,7 +90,7 @@ function ServiceDirectoryContent() {
           <div className="services-grid">{filteredServices.map((service) => {
             const serviceKey = service.name.toLocaleLowerCase();
             const image = serviceImages[serviceKey];
-            const serviceCategory = getServiceCategoryByName(service.name);
+            const serviceCategory = serviceCategories.find((categoryRecord) => categoryRecord.service._id === service._id);
             return (
               <Link className={`service-tile${image ? " has-image" : ""}`} href={serviceCategory ? `/services/${serviceCategory.slug}` : `/services/${service._id}`} key={service._id}>
                 {image ? (

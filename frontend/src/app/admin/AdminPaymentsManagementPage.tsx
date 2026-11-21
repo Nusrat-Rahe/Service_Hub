@@ -13,8 +13,8 @@ import {
 import { formatMoney } from "@/lib/money";
 
 function methodLabel(method?: PaymentMethod) {
-  if (method === "bkash_demo") return "bKash";
-  if (method === "card_demo") return "Card";
+  if (method === "bkash" || method === "bkash_demo") return "bKash";
+  if (method === "card" || method === "card_demo") return "Card";
   if (method === "cod") return "Cash on Delivery";
   return "Legacy payment";
 }
@@ -113,7 +113,7 @@ export default function AdminPaymentsManagementPage() {
           <div className="admin-table-tools payment-admin-filters">
             <label className="admin-table-search"><Search size={16} /><input aria-label="Search transaction or booking ID" onChange={(event) => { setIsLoading(true); setQuery(event.target.value); }} placeholder="Transaction or booking ID" value={query} /></label>
             <label className="admin-filter"><select aria-label="Filter by payment status" onChange={(event) => { setIsLoading(true); setStatus(event.target.value); }} value={status}><option value="">All statuses</option><option>Paid</option><option>Pending</option><option>Failed</option><option>Refunded</option></select></label>
-            <label className="admin-filter"><select aria-label="Filter by payment method" onChange={(event) => { setIsLoading(true); setMethod(event.target.value); }} value={method}><option value="">All methods</option><option value="bkash_demo">bKash</option><option value="card_demo">Card</option><option value="cod">Cash on Delivery</option></select></label>
+            <label className="admin-filter"><select aria-label="Filter by payment method" onChange={(event) => { setIsLoading(true); setMethod(event.target.value); }} value={method}><option value="">All methods</option><option value="bkash">bKash</option><option value="card">Card</option><option value="cod">Cash on Delivery</option></select></label>
           </div>
         </div>
         {error && <p className="admin-error payment-admin-error" role="alert">{error}</p>}
@@ -160,7 +160,7 @@ export default function AdminPaymentsManagementPage() {
             <div><span>Payment date</span><strong>{formatDate(detail.payment.date)}</strong></div>
             <div><span>Amount</span><strong>{formatMoney(detail.payment.amount)}</strong></div>
             {detail.payment.paymentMethod === "cod" && detail.payment.status === "Pending" && <div className="payment-admin-cod-note"><ShieldCheck size={16} /> COD can be marked Paid only after this booking is completed.</div>}
-            <p className="payment-admin-disclaimer">ServiceHub does not process real financial transactions. No payment credentials were requested or stored.</p>
+            <p className="payment-admin-disclaimer">bKash and Card are simulated academic-project selections and do not process real transactions. Cash on Delivery stays pending until confirmed after service completion.</p>
             {detail.payment.paymentMethod === "cod" && detail.payment.status === "Pending" && <button className="admin-button" disabled={updatingId === detail.payment._id || detail.booking?.status !== "Completed"} onClick={() => void markCodPaid({ ...detail.payment, bookingStatus: detail.booking?.status })} type="button">{updatingId === detail.payment._id ? "Saving…" : "Confirm COD as paid"}</button>}
           </div>}
         </section>

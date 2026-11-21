@@ -1,17 +1,7 @@
 import Link from "next/link";
-import { getServiceCategoryByName } from "@/lib/service-categories";
 import HomeSearch from "@/components/layout/HomeSearch";
-
-const categories = [
-  { name: "Cleaning", image: "/images/services/cleaning.jpg", description: "A fresh, comfortable home" },
-  { name: "Plumbing", image: "/images/services/plumbing.jpg", description: "Repairs, leaks and fittings" },
-  { name: "Electrical", image: "/images/services/electrical.jpg", description: "Safe help around the home" },
-  { name: "AC repair", image: "/images/services/ac-repair.jpg", description: "Servicing and maintenance" },
-  { name: "Painting", image: "/images/services/painting.png", description: "A fresh look for your home" },
-  { name: "Pest Control", image: "/images/services/pest%20control.jpg", description: "Keep unwanted pests away" },
-  { name: "Appliance Repair", image: "/images/services/applience%20repair.jpeg", description: "Get household appliances working" },
-  { name: "Moving & Shifting", image: "/images/services/moving%20%26%20shifting.png", description: "Make your move easier" },
-];
+import HomeCategories from "@/components/home/HomeCategories";
+import { PopularServices, WhyChooseUs } from "@/components/home/HomeSections";
 
 export default function HomePage() {
   return (
@@ -47,22 +37,7 @@ export default function HomePage() {
             Browse all services →
           </Link>
         </div>
-        <div className="category-grid">
-          {categories.map((category) => {
-            const serviceCategory = getServiceCategoryByName(category.name);
-            return (
-              <Link
-                className="category-card"
-                href={serviceCategory ? `/services/${serviceCategory.slug}` : `/services?category=${encodeURIComponent(category.name)}`}
-                key={category.name}
-              >
-                <span className="category-image" style={{ backgroundImage: `url("${category.image}")` }} />
-                <strong>{category.name}</strong>
-                <span>{category.description}</span>
-              </Link>
-            );
-          })}
-        </div>
+        <HomeCategories />
       </section>
 
       <section className="how-section" id="how-it-works">
@@ -88,6 +63,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      <WhyChooseUs id="why-choose-us" />
+      <PopularServices id="popular-services" />
     </>
   );
 }

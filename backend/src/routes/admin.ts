@@ -4,17 +4,21 @@ import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
 import { Booking } from "../models/Booking";
 import { AdminBookingNotification } from "../models/AdminBookingNotification";
+import { Category } from "../models/Category";
 import { Notification } from "../models/Notification";
 import { Payment } from "../models/Payment";
 import { Review } from "../models/Review";
 import { Service } from "../models/Service";
+import { Slot } from "../models/Slot";
+import { Subcategory } from "../models/Subcategory";
 import { User } from "../models/User";
 import { requireAdmin } from "../middleware/requireAdmin";
+import { ensureServiceCategory } from "../seedCategories";
 
 const router = Router();
 router.use(requireAdmin);
 
-const paymentMethods = ["bkash_demo", "card_demo", "cod"] as const;
+const paymentMethods = ["bkash", "card", "cod", "bkash_demo", "card_demo"] as const;
 const paymentStatuses = ["Pending", "Paid", "Failed", "Refunded"] as const;
 
 router.get("/booking-notifications", async (req, res, next) => {
@@ -293,26 +297,38 @@ router.get("/services", async (_req, res, next) => {
 });
 
 router.post("/services", async (req, res, next) => {
-  const { name, category, description, price } = req.body as Record<string, unknown>;
+  const { name, category, description, image, price } = req.body as Record<string, unknown>;
   if (
     !isNonEmptyString(name, 100) ||
     !isNonEmptyString(category, 80) ||
     !isNonEmptyString(description, 1000) ||
+    (image !== undefined && typeof image !== "string") ||
+    (typeof image === "string" && image.length > 2048) ||
     !isPrice(price)
   ) {
     res.status(400).json({ message: "Provide a name, category, description, and valid price." });
     return;
   }
+  const session = await mongoose.startSession();
   try {
-    const service = await Service.create({
-      name: name.trim(),
-      category: category.trim(),
-      description: description.trim(),
-      price,
+    let service: InstanceType<typeof Service> | null = null;
+    await session.withTransaction(async () => {
+      const [created] = await Service.create([{
+        name: name.trim(),
+        category: category.trim(),
+        description: description.trim(),
+        image: typeof image === "string" ? image.trim() : "",
+        price,
+      }], { session });
+      service = created;
+      await ensureServiceCategory(created, session, true);
     });
+    if (!service) throw new Error("The service could not be created.");
     res.status(201).json({ service });
   } catch (error) {
     routeError(next, error);
+  } finally {
+    await session.endSession();
   }
 });
 
@@ -321,7 +337,7 @@ router.patch("/services/:id", async (req, res, next) => {
     res.status(400).json({ message: "Invalid service ID." });
     return;
   }
-  const { name, category, description, price, status } = req.body as Record<string, unknown>;
+  const { name, category, description, image, price, status } = req.body as Record<string, unknown>;
   const update: Record<string, string | number> = {};
   if (name !== undefined) {
     if (!isNonEmptyString(name, 100)) { res.status(400).json({ message: "Invalid service name." }); return; }
@@ -335,6 +351,10 @@ router.patch("/services/:id", async (req, res, next) => {
     if (!isNonEmptyString(description, 1000)) { res.status(400).json({ message: "Invalid service description." }); return; }
     update.description = description.trim();
   }
+  if (image !== undefined) {
+    if (typeof image !== "string" || image.length > 2048) { res.status(400).json({ message: "Invalid service image URL." }); return; }
+    update.image = image.trim();
+  }
   if (price !== undefined) {
     if (!isPrice(price)) { res.status(400).json({ message: "Invalid service price." }); return; }
     update.price = price;
@@ -346,6 +366,20 @@ router.patch("/services/:id", async (req, res, next) => {
   try {
     const service = await Service.findByIdAndUpdate(req.params.id, update, { new: true, runValidators: true });
     if (!service) { res.status(404).json({ message: "Service not found." }); return; }
+    const categoryRecord = await Category.findOne({ serviceId: service._id });
+    if (categoryRecord) {
+      if (typeof update.name === "string") {
+        categoryRecord.name = update.name;
+        categoryRecord.heading = `Choose Your ${update.name} Service`;
+        await categoryRecord.save();
+      }
+      if (typeof update.description === "string") {
+        await Subcategory.updateOne(
+          { categoryId: categoryRecord._id, slug: "general" },
+          { $set: { description: update.description } },
+        );
+      }
+    }
     res.json({ service });
   } catch (error) {
     routeError(next, error);
@@ -420,14 +454,70 @@ router.patch("/bookings/:id/status", async (req, res, next) => {
     res.status(400).json({ message: "Invalid booking status." });
     return;
   }
+  const session = await mongoose.startSession();
   try {
-    const booking = await Booking.findByIdAndUpdate(req.params.id, { status }, { new: true, runValidators: true });
+    let booking: InstanceType<typeof Booking> | null = null;
+    await session.withTransaction(async () => {
+      booking = await Booking.findById(req.params.id).session(session);
+      if (!booking) return;
+      if (booking.status !== "Cancelled" && status === "Cancelled") {
+        if (booking.slotId) {
+          const counter = booking.reservationExpiresAt ? "reservedCount" : "bookedCount";
+          const slotUpdate = await Slot.updateOne(
+            { _id: booking.slotId, [counter]: { $gt: 0 } },
+            { $inc: { [counter]: -1 } },
+            { session },
+          );
+          if (slotUpdate.matchedCount !== 1) {
+            throw new AdminBookingConflict("The booking time slot could not be released.");
+          }
+        }
+        booking.reservationExpiresAt = null;
+        const failedPayments = await Payment.updateMany(
+          { bookingId: booking._id, status: "Pending" },
+          { $set: { status: "Failed" } },
+          { session },
+        );
+        if (failedPayments.modifiedCount > 0 && booking.paymentStatus === "Pending") {
+          booking.paymentStatus = "Failed";
+        }
+      }
+      if (
+        booking.status === "Pending" &&
+        (status === "Confirmed" || status === "Completed") &&
+        booking.slotId &&
+        booking.reservationExpiresAt
+      ) {
+        const slotUpdate = await Slot.updateOne(
+          { _id: booking.slotId, reservedCount: { $gt: 0 } },
+          { $inc: { reservedCount: -1, bookedCount: 1 } },
+          { session },
+        );
+        if (slotUpdate.matchedCount !== 1) {
+          throw new AdminBookingConflict("The reserved booking time slot could not be confirmed.");
+        }
+        booking.reservationExpiresAt = null;
+      }
+      if (booking.status === "Cancelled" && status !== "Cancelled") {
+        throw new AdminBookingConflict("Cancelled bookings cannot be reopened. Create a new booking instead.");
+      }
+      booking.status = status as typeof booking.status;
+      await booking.save({ session });
+    });
     if (!booking) { res.status(404).json({ message: "Booking not found." }); return; }
     res.json({ booking });
   } catch (error) {
+    if (error instanceof AdminBookingConflict) {
+      res.status(409).json({ message: error.message });
+      return;
+    }
     routeError(next, error);
+  } finally {
+    await session.endSession();
   }
 });
+
+class AdminBookingConflict extends Error {}
 
 router.get("/payments", async (req, res, next) => {
   const { status, method, q } = req.query;

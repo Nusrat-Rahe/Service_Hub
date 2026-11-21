@@ -22,7 +22,7 @@ const faqs = [
   {
     question: "What payment methods are available?",
     answer:
-      "The checkout currently offers bKash, card, and Cash on Delivery. Online payment options are demonstration records only and do not process real transactions.",
+      "You can choose bKash, Card, or Cash on Delivery. bKash and Card are simulated for this academic project and do not make real transactions or require payment details. Cash on Delivery remains pending until payment is received.",
   },
   {
     question: "Is there any refund policy?",

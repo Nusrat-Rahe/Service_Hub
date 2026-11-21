@@ -3,12 +3,15 @@
 import { useState } from "react";
 import type { SubmitEvent } from "react";
 import PasswordField from "@/components/auth/PasswordField";
+import Link from "next/link";
 import { registerUser, type AuthUser } from "@/lib/auth";
 
 export default function RegisterForm({
   onSuccess,
+  onNavigateAway,
 }: {
   onSuccess: (user: AuthUser) => void;
+  onNavigateAway: () => void;
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
@@ -94,10 +97,15 @@ export default function RegisterForm({
         visible={showPassword}
       />
 
-      <label className="auth-terms" htmlFor="terms">
+      <div className="auth-terms">
         <input id="terms" name="terms" required type="checkbox" />
-        <span>I agree to the terms and privacy policy.</span>
-      </label>
+        <label htmlFor="terms">
+          I agree to{" "}
+          <Link href="/terms" onClick={onNavigateAway}>Terms &amp; Conditions</Link>
+          {" "}and{" "}
+          <Link href="/privacy" onClick={onNavigateAway}>Privacy Policy</Link>.
+        </label>
+      </div>
 
       <button
         className="button auth-submit"

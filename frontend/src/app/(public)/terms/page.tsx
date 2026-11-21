@@ -36,8 +36,7 @@ const termsSections = [
     title: "Payment Policy",
     items: [
       "Customers must pay the service charges displayed during booking.",
-      "Available payment methods may include bKash, Debit/Credit Card, and Cash on Delivery, depending on availability.",
-      "Online payments are subject to successful payment confirmation.",
+      "bKash and Card selections are simulated for this academic project; they do not make real transactions or request payment credentials.",
       "Cash on Delivery payments must be completed after receiving the service.",
       "Customers should keep their payment receipts for future reference.",
     ],
