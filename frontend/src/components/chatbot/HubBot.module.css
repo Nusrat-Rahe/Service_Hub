@@ -1,0 +1,368 @@
+.root {
+  position: fixed;
+  z-index: 1000;
+  right: 24px;
+  bottom: 24px;
+  color: var(--color-ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.launcher {
+  display: flex;
+  min-width: 62px;
+  height: 62px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-primary);
+  box-shadow: 0 10px 28px rgb(24 51 42 / 12%);
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.launcher:hover {
+  transform: translateY(-2px);
+  background: var(--color-primary-dark);
+  box-shadow: 0 13px 32px rgb(24 51 42 / 16%);
+}
+
+.launcher:focus-visible,
+.closeButton:focus-visible,
+.sendButton:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.launcherLabel {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.panel {
+  position: absolute;
+  right: 0;
+  bottom: 78px;
+  display: flex;
+  width: min(390px, calc(100vw - 32px));
+  height: min(590px, calc(100dvh - 122px));
+  min-height: 360px;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow: 0 20px 60px rgb(24 51 42 / 20%);
+  animation: panelEnter 180ms ease-out;
+}
+
+.header {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.avatar,
+.messageAvatar {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  background: rgb(255 255 255 / 17%);
+  color: #ffffff;
+}
+
+.headerCopy {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+}
+
+.headerCopy strong {
+  font-size: 16px;
+}
+
+.headerCopy span {
+  color: #dbf4e9;
+  font-size: 12px;
+}
+
+.closeButton {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.closeButton:hover {
+  background: rgb(255 255 255 / 15%);
+}
+
+.messages {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding: 18px 14px;
+  overscroll-behavior: contain;
+  background: #f5f9f6;
+}
+
+.messageRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  animation: messageEnter 180ms ease-out;
+}
+
+.assistantRow {
+  justify-content: flex-start;
+}
+
+.userRow {
+  justify-content: flex-end;
+}
+
+.messageAvatar {
+  width: 27px;
+  height: 27px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+}
+
+.bubble {
+  max-width: 82%;
+  margin: 0;
+  padding: 11px 13px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.assistantBubble {
+  border: 1px solid var(--color-border);
+  border-bottom-left-radius: 5px;
+  background: #ffffff;
+  color: var(--color-ink);
+}
+
+.userBubble {
+  border-bottom-right-radius: 5px;
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.typing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 13px 15px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  border-bottom-left-radius: 5px;
+  background: #ffffff;
+}
+
+.typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  animation: typingPulse 1s infinite ease-in-out;
+}
+
+.typing span:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.typing span:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+.errorMessage {
+  align-self: flex-start;
+  max-width: 90%;
+  padding: 11px 13px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #ffffff;
+  color: var(--color-ink);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.errorMessage p {
+  margin: 0 0 5px;
+}
+
+.errorMessage a {
+  color: var(--color-primary);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 13px 8px;
+  border-top: 1px solid var(--color-border);
+  background: #ffffff;
+}
+
+.composer input {
+  width: 0;
+  min-width: 0;
+  height: 44px;
+  flex: 1;
+  padding: 0 13px;
+  border: 1px solid var(--color-border);
+  border-radius: 13px;
+  outline: none;
+  background: #ffffff;
+  color: var(--color-ink);
+  font-size: 14px;
+}
+
+.composer input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+.composer input::placeholder {
+  color: var(--color-muted);
+}
+
+.sendButton {
+  display: grid;
+  width: 43px;
+  height: 43px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 13px;
+  background: var(--color-primary);
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.sendButton:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.sendButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.disclaimer {
+  margin: 0;
+  padding: 0 14px 11px;
+  background: #ffffff;
+  color: var(--color-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+@keyframes panelEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes messageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes typingPulse {
+  0%,
+  60%,
+  100% {
+    opacity: 0.38;
+    transform: translateY(0);
+  }
+
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+@media (max-width: 600px) {
+  .root {
+    right: 12px;
+    bottom: 14px;
+  }
+
+  .launcher {
+    height: 56px;
+    min-width: 56px;
+    padding-inline: 16px;
+  }
+
+  .panel {
+    position: fixed;
+    right: 12px;
+    bottom: 82px;
+    width: calc(100vw - 24px);
+    height: min(640px, calc(100dvh - 108px));
+    min-height: 300px;
+    border-radius: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .launcher,
+  .panel,
+  .messageRow,
+  .typing span {
+    animation: none;
+    transition: none;
+  }
+}

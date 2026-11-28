@@ -37,6 +37,10 @@ In the frontend terminal, set `NEXT_PUBLIC_API_URL=http://localhost:5000` in `fr
 
 Run `npm run lint` and `npx tsc --noEmit` from `frontend`; run `npm run build` from `backend` to validate the backend.
 
+## HubBot AI assistant
+
+HubBot uses Google Gemini from the backend. Add `GEMINI_API_KEY` to `backend/.env` and optionally set `GEMINI_MODEL` (defaults to `gemini-3.5-flash-lite`). Never add the API key to frontend environment variables or commit it. Chat messages and the active service catalog context are sent to Google Gemini to generate replies; the chat UI advises users not to share passwords or payment details. The chatbot reads active service prices and service details from MongoDB for each request; it does not check live appointment availability, and hourly or pest-control per-visit pricing is not configured in the current data model. The public chatbot endpoint is rate limited and keeps conversation context in the browser for the current page session.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
